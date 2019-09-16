@@ -1841,7 +1841,7 @@ let update_ (msg : msg) (m : model) : modification =
                       ; selectionStart = None } }
               | Some (selBegin, selEnd) ->
                   (* re-apply selection *)
-                  Entry.setFluidSelectionRange (selBegin, selEnd);
+                  Entry.setFluidSelectionRange (selBegin, selEnd) ;
                   { m with
                     fluidState =
                       { m.fluidState with
@@ -1849,16 +1849,18 @@ let update_ (msg : msg) (m : model) : modification =
                       ; oldPos = m.fluidState.newPos
                       ; newPos = selEnd } }
               | None ->
-                  match Entry.getFluidSelectionRange () with
-                  | Some (selBegin, selEnd) ->
-                    {m with fluidState = {m.fluidState with 
-                      newPos = selEnd;
-                      selectionStart = Some selBegin}}
-                  | None -> 
-                    {m with fluidState = {m.fluidState with 
-                      (* newPos = selEnd; *)
-                      selectionStart = None}}
-              ) ]
+                ( match Entry.getFluidSelectionRange () with
+                | Some (selBegin, selEnd) ->
+                    { m with
+                      fluidState =
+                        { m.fluidState with
+                          newPos = selEnd; selectionStart = Some selBegin } }
+                | None ->
+                    { m with
+                      fluidState =
+                        { m.fluidState with
+                          (* newPos = selEnd; *)
+                          selectionStart = None } } ) ) ]
   | ResetToast ->
       TweakModel (fun m -> {m with toast = Defaults.defaultToast})
   | UpdateMinimap data ->
