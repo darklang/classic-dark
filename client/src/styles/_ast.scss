@@ -3,12 +3,8 @@ $lambda-color: $orange;
 $pipe-color: $blue;
 
 @mixin precedence($depth) {
-  .precedence-#{$depth} {
-    &:not(.mouseovered),
-    &:not(.mouseovered) .entry form #search-container #suggestionBox,
-    &:not(.mouseovered) .string-entry {
-      background-color: fade($grey2, 5% + ($depth * 5%));
-    }
+  .fncall.precedence-#{$depth} {
+      background-color: darken($grey2, 5% + ($depth * 5%));
 
     &.selected {
       background-color: $selected-background;
@@ -562,6 +558,7 @@ $toplevel-shadow-front: 1px 2px 4px 2px $black1;
     }
   }
 
+  @include precedence(0);
   @include precedence(1);
   @include precedence(2);
   @include precedence(3);
