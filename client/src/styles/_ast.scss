@@ -4,7 +4,7 @@ $pipe-color: $blue;
 
 @mixin precedence($depth) {
   .fncall.precedence-#{$depth} {
-      background-color: darken($grey2, 5% + ($depth * 5%));
+      background-color: lighten(#222546, 5% + ($depth * 5%));
 
     &.selected {
       background-color: $selected-background;
@@ -558,7 +558,6 @@ $toplevel-shadow-front: 1px 2px 4px 2px $black1;
     }
   }
 
-  @include precedence(0);
   @include precedence(1);
   @include precedence(2);
   @include precedence(3);
