@@ -2,13 +2,41 @@
 $lambda-color: $orange;
 $pipe-color: $blue;
 
+.paren-color-0 {
+  color: $cyan;
+}
+.paren-color-1 {
+  color: $blue;
+}
+.paren-color-2 {
+  color: lighten($purple, 15%);
+}
+.paren-color-3 {
+  color: $pink;
+}
+
 @mixin precedence($depth) {
   .fncall.precedence-#{$depth} {
+    &:before,
+    &:after {
+      @extend .paren-color-#{$depth % 4};
+    }
+
+    &:before {
+      content: "(";
+    }
+
+    &:after {
+      content: ")";
+    }
+
+    /*
       background-color: lighten(#222546, 5% + ($depth * 5%));
 
     &.selected {
       background-color: $selected-background;
     }
+    */
   }
 }
 
@@ -564,6 +592,8 @@ $toplevel-shadow-front: 1px 2px 4px 2px $black1;
   @include precedence(4);
   @include precedence(5);
   @include precedence(6);
+  @include precedence(7);
+  @include precedence(8);
 
   .threadexpr {
     .threadmember {
