@@ -3,40 +3,23 @@ $lambda-color: $orange;
 $pipe-color: $blue;
 
 .paren-color-0 {
-  color: $cyan;
+  background-color: #283068; //darken(desaturate($grey3, 10%), 30%);
 }
 .paren-color-1 {
-  color: $blue;
+  background-color:  #3a2b68; // darken(desaturate($purple, 10%), 30%);
 }
 .paren-color-2 {
-  color: lighten($purple, 15%);
+  background-color:  #6f1d41; // darken(desaturate($cyan, 10%), 30%);
 }
 .paren-color-3 {
-  color: $pink;
+   background-color: #463531; //darken(desaturate($pink, 10%), 30%);
 }
 
 @mixin precedence($depth) {
   .fncall.precedence-#{$depth} {
-    &:before,
-    &:after {
-      @extend .paren-color-#{$depth % 4};
-    }
-
-    &:before {
-      content: "(";
-    }
-
-    &:after {
-      content: ")";
-    }
-
-    /*
-      background-color: lighten(#222546, 5% + ($depth * 5%));
-
-    &.selected {
-      background-color: $selected-background;
-    }
-    */
+    border-radius: 0.5rem;
+    padding: 0 0.25rem;
+    @extend .paren-color-#{$depth % 4};
   }
 }
 
