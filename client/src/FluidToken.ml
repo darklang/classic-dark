@@ -65,6 +65,8 @@ let tid (t : token) : id =
   | TPatternFloatPoint (_, id)
   | TPatternFloatFraction (_, id, _)
   | TSep id
+  | TParenOpen id
+  | TParenClose id
   | TNewline (Some (id, _, _)) ->
       id
   | TNewline None | TIndent _ ->
@@ -150,7 +152,9 @@ let isTextToken token : bool =
   | TMatchKeyword _
   | TMatchSep _
   | TPipe _
-  | TLambdaArrow _ ->
+  | TLambdaArrow _
+  | TParenOpen _
+  | TParenClose _ ->
       false
 
 
@@ -358,6 +362,8 @@ let toText (t : token) : string =
       canBeEmpty name
   | TPatternConstructorName (_, _, name) ->
       canBeEmpty name
+  | TParenOpen _ -> "(" (* TODO(JULIAN): It isn't immediately clear if we want to make toText do this, depending on how toText is used... *)
+  | TParenClose _ -> ")"
 
 
 let toTestText (t : token) : string =
@@ -520,6 +526,10 @@ let toTypeName (t : token) : string =
       "pattern-float-point"
   | TPatternFloatFraction _ ->
       "pattern-float-fraction"
+  | TParenOpen _ ->
+      "paren-open"
+  | TParenClose _ ->
+      "paren-close"
 
 
 let toCategoryName (t : token) : string =
@@ -572,6 +582,8 @@ let toCategoryName (t : token) : string =
   | TPatternFloatPoint _
   | TPatternFloatFraction _ ->
       "pattern"
+  | TParenOpen _ | TParenClose _ ->
+      "paren"
 
 
 let toDebugInfo (t : token) : string =
