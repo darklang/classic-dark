@@ -4705,6 +4705,7 @@ let viewPlayIcon
 let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
     Types.msg Html.html list =
   let l = ast |> toTokens state in
+  let nesting = ref 0 in
   List.map l ~f:(fun ti ->
       let dropdown () =
         match state.cp.location with
@@ -4722,12 +4723,21 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
           then ["related-change"]
           else []
         in
+        let nestingClass = 
+          let tokenPrecedence = (match ti.token with 
+          | TParenOpen _ -> nesting := !nesting + 1; !nesting
+          | TParenClose _ -> nesting := !nesting - 1; !nesting + 1
+          | _ -> !nesting) in
+          (* We want 0 precedence to only show up at the root and not in any wraparounds, so this goes 0123412341234... *)
+          ["precedence-" ^ (string_of_int (if tokenPrecedence > 0 then 
+                                          (((tokenPrecedence-1) mod 4) + 1)
+                                          else tokenPrecedence))] in
         let classes = Token.toCssClasses ti.token in
         let idStr = deID (Token.tid ti.token) in
         let idclasses = ["id-" ^ idStr] in
         Html.span
           [ Attrs.class'
-              ( ["fluid-entry"] @ classes @ idclasses @ highlight
+              ( ["fluid-entry"] @ nestingClass @ classes @ idclasses @ highlight
               |> String.join ~sep:" " )
           ; ViewUtils.eventNeither
               ~key:("fluid-selection-dbl-click" ^ idStr)
