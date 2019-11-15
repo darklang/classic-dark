@@ -585,15 +585,16 @@ let rec toTokens' (s : state) (e : ast) : token list =
         ; TIndent 2
         ; nested else' ]
   | EBinOp (id, op, lexpr, rexpr, _ster) ->
-      let start =
+      let (start, ending) =
         match lexpr with
         | EThreadTarget _ ->
-            []
+            ([], [])
         | _ ->
-            [nested ~placeholderFor:(Some (op, 0)) lexpr; TSep]
+            ([TParenOpen id; nested ~placeholderFor:(Some (op, 0)) lexpr; TSep], [TParenClose id])
       in
       start
       @ [TBinOp (id, op); TSep; nested ~placeholderFor:(Some (op, 1)) rexpr]
+      @ ending
   | EPartial (id, newName, EBinOp (_, oldName, lexpr, rexpr, _ster)) ->
       let ghost = ghostPartial id newName oldName in
       let start =
@@ -708,11 +709,11 @@ let rec toTokens' (s : state) (e : ast) : token list =
         in
         let tailNewline =
           if endsInNewline tailTokens
-          then []
-          else [TNewline (Some (id, id, Some (List.length tail)))]
+          then [TParenClose id]
+          else [TParenClose id; TNewline (Some (id, id, Some (List.length tail)))]
         in
-        [nested head; TNewline (Some (id, id, Some 0)); tailTokens]
-        @ tailNewline )
+        [TParenOpen id; nested head; TNewline (Some (id, id, Some 0)); tailTokens]
+        @ tailNewline)
   | EThreadTarget _ ->
       recover "should never be making tokens for EThreadTarget" []
   | EMatch (id, mexpr, pairs) ->
