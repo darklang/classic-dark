@@ -585,12 +585,13 @@ let rec toTokens' (s : state) (e : ast) : token list =
         ; TIndent 2
         ; nested else' ]
   | EBinOp (id, op, lexpr, rexpr, _ster) ->
-      let (start, ending) =
+      let start, ending =
         match lexpr with
         | EThreadTarget _ ->
             ([], [])
         | _ ->
-            ([TParenOpen id; nested ~placeholderFor:(Some (op, 0)) lexpr; TSep], [TParenClose id])
+            ( [TParenOpen id; nested ~placeholderFor:(Some (op, 0)) lexpr; TSep]
+            , [TParenClose id] )
       in
       start
       @ [TBinOp (id, op); TSep; nested ~placeholderFor:(Some (op, 1)) rexpr]
@@ -710,10 +711,14 @@ let rec toTokens' (s : state) (e : ast) : token list =
         let tailNewline =
           if endsInNewline tailTokens
           then [TParenClose id]
-          else [TParenClose id; TNewline (Some (id, id, Some (List.length tail)))]
+          else
+            [TParenClose id; TNewline (Some (id, id, Some (List.length tail)))]
         in
-        [TParenOpen id; nested head; TNewline (Some (id, id, Some 0)); tailTokens]
-        @ tailNewline)
+        [ TParenOpen id
+        ; nested head
+        ; TNewline (Some (id, id, Some 0))
+        ; tailTokens ]
+        @ tailNewline )
   | EThreadTarget _ ->
       recover "should never be making tokens for EThreadTarget" []
   | EMatch (id, mexpr, pairs) ->
@@ -3132,7 +3137,7 @@ let doInsert' ~pos (letter : char) (ti : tokenInfo) (ast : ast) (s : state) :
   | TLambdaSep _
   | TMatchSep _
   | TMatchKeyword _
-  | TPartialGhost _ 
+  | TPartialGhost _
   | TParenOpen _ (* TODO(JULIAN): Is this reasonable? *)
   | TParenClose _ ->
       (ast, s)
@@ -4698,7 +4703,7 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
     Types.msg Html.html list =
   let l = ast |> toTokens state in
   let nesting = ref 0 in
-  List.map l ~f:(fun ti ->
+  List.indexedMap l ~f:(fun i ti ->
       let dropdown () =
         match state.cp.location with
         | Some (ltlid, token) when tlid = ltlid && ti.token = token ->
@@ -4715,21 +4720,47 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
           then ["related-change"]
           else []
         in
-        let nestingClass = 
-          let tokenPrecedence = (match ti.token with 
-          | TParenOpen _ -> nesting := !nesting + 1; !nesting
-          | TParenClose _ -> nesting := !nesting - 1; !nesting + 1
-          | _ -> !nesting) in
+        let nestingClass =
+          let tokenPrecedence =
+            match ti.token with
+            | TParenOpen _ ->
+                nesting := !nesting + 1 ;
+                !nesting
+            | TParenClose _ ->
+                nesting := !nesting - 1 ;
+                !nesting + 1
+            | _ ->
+                !nesting
+          in
           (* We want 0 precedence to only show up at the root and not in any wraparounds, so this goes 0123412341234... *)
-          ["precedence-" ^ (string_of_int (if tokenPrecedence > 0 then 
-                                          (((tokenPrecedence-1) mod 4) + 1)
-                                          else tokenPrecedence))] in
+          [ "precedence-"
+            ^ string_of_int
+                ( if tokenPrecedence > 0
+                then ((tokenPrecedence - 1) mod 4) + 1
+                else tokenPrecedence ) ]
+        in
+        let openIntoClass =
+          match List.getAt ~index:(i + 1) l with
+          | Some nextTi ->
+            ( match nextTi.token with
+            | TParenOpen _ ->
+                ["fluid-open-into"]
+            | _ ->
+                [] )
+          | None ->
+              []
+        in
         let classes = Token.toCssClasses ti.token in
         let idStr = deID (Token.tid ti.token) in
         let idclasses = ["id-" ^ idStr] in
         Html.span
           [ Attrs.class'
-              ( ["fluid-entry"] @ nestingClass @ classes @ idclasses @ highlight
+              ( ["fluid-entry"]
+                @ nestingClass
+                @ openIntoClass
+                @ classes
+                @ idclasses
+                @ highlight
               |> String.join ~sep:" " )
           ; ViewUtils.eventNeither
               ~key:("fluid-selection-dbl-click" ^ idStr)

@@ -7,10 +7,21 @@ $prec-colors: (#471b6f, #194f75, #2b2a6b, #1a4219);
 @mixin precedence($depth) {
   .precedence-#{$depth} {
     background-color: nth($prec-colors, $depth);
+    z-index: $depth;
   }
   .precedence-#{$depth}.fluid-category-paren {
     color: nth($prec-colors, $depth);
   }
+
+  @if $depth > 1 {
+    .precedence-#{$depth}.fluid-paren-open {
+      margin-left: -1ch;
+    }
+  }
+}
+
+.fluid-open-into {
+  width: 2ch;
 }
 
 .fluid-paren-open {
@@ -18,6 +29,8 @@ $prec-colors: (#471b6f, #194f75, #2b2a6b, #1a4219);
 }
 .fluid-paren-close {
   border-radius: 0 7px 7px 0;
+  width: 2ch;
+  margin-right: -1ch;
 }
 
 .fluid-variant .live-values {
@@ -109,12 +122,11 @@ https://github.com/chriskempson/tomorrow-theme */
   .fluid-entry {
     display: inline-block;
     white-space: pre;
-    
+
     &.fluid-newline {
       white-space: nowrap;
     }
   }
-
 
   .fluid-newline {
     display: block;
@@ -329,12 +341,12 @@ since they are essentially both commands just acting upon different things. */
   flex-direction: row;
   justify-content: space-between;
   width: 100%;
-
-  @include precedence(1);
-  @include precedence(2);
-  @include precedence(3);
-  @include precedence(4);
 }
+
+@include precedence(1);
+@include precedence(2);
+@include precedence(3);
+@include precedence(4);
 
 .fluid-error-rail {
   display: none;
