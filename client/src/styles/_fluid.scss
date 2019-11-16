@@ -3,7 +3,7 @@
 //*************
 
 /* The amount of nestings before repeat is defined in toHtml of Fluid.ml */
-$prec-colors: (#471b6f, #194f75, #2b2a6b, #1a4219);
+$prec-colors: (#301728, #93385F, #4F3466, #9F6B99);
 @mixin precedence($depth) {
   .precedence-#{$depth} {
     background-color: nth($prec-colors, $depth);
@@ -18,6 +18,10 @@ $prec-colors: (#471b6f, #194f75, #2b2a6b, #1a4219);
       margin-left: -1ch;
     }
   }
+
+  .precedence-#{$depth}.fluid-paren-close + .precedence-#{$depth - 1} {
+    width: 2ch;
+  }
 }
 
 .fluid-open-into {
@@ -29,7 +33,6 @@ $prec-colors: (#471b6f, #194f75, #2b2a6b, #1a4219);
 }
 .fluid-paren-close {
   border-radius: 0 7px 7px 0;
-  width: 2ch;
   margin-right: -1ch;
 }
 
