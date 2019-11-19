@@ -4723,23 +4723,25 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
           then ["related-change"]
           else []
         in
-        let nestingClass = 
-          let tokenPrecedence = (match ti.token with 
-          | TParenOpen _ -> nesting := !nesting + 1; !nesting
-          | TParenClose _ -> nesting := !nesting - 1; !nesting + 1
-          | _ -> !nesting) in
-          (* We want 0 precedence to only show up at the root and not in any wraparounds, so this goes 0123412341234... *)
-          ["precedence-" ^ (string_of_int (if tokenPrecedence > 0 then 
-                                          (((tokenPrecedence-1) mod 4) + 1)
-                                          else tokenPrecedence))] in
+        let (backingNestingClass, innerNestingClass) = 
+          let (tokenBackingPrecedence, tokenInnerPrecedence) = 
+            (let currNesting = !nesting in
+              (match ti.token with 
+              | TParenOpen _ -> nesting := !nesting + 1; (currNesting, Some !nesting)
+              | TParenClose _ -> nesting := !nesting - 1; (!nesting, Some currNesting)
+              | _ -> (currNesting, None))) in
+          (* We want 0 precedence to only show up at the AST root and not in any wraparounds, so this goes 0123412341234... *)
+          let wraparoundPrecedenceClass ~ext n = (let wraparoundPrecedence = (if n > 0 then 
+                                          (((n-1) mod 4) + 1)
+                                          else n) in (["precedence-" ^ (wraparoundPrecedence |> string_of_int)] @ ext)) in
+          ((tokenBackingPrecedence |> (wraparoundPrecedenceClass ~ext:[])),
+           (tokenInnerPrecedence |> Option.map ~f:(wraparoundPrecedenceClass ~ext:["fluid-inner"])))
+           in
         let classes = Token.toCssClasses ti.token in
         let idStr = deID (Token.tid ti.token) in
         let idclasses = ["id-" ^ idStr] in
-        Html.span
-          [ Attrs.class'
-              ( ["fluid-entry"] @ nestingClass @ classes @ idclasses @ highlight
-              |> String.join ~sep:" " )
-          ; ViewUtils.eventNeither
+        let clickHandlers = [
+          ViewUtils.eventNeither
               ~key:("fluid-selection-dbl-click" ^ idStr)
               "dblclick"
               (fun ev ->
@@ -4799,8 +4801,18 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
                 | None ->
                     (* This will happen if it gets a selection and there is no
                      focused node (weird browser problem?) *)
-                    IgnoreMsg ) ]
-          ([Html.text content] @ nested)
+                    IgnoreMsg )
+          
+        ] in
+        let innerNode =
+          (match innerNestingClass with
+          | Some cls -> [Html.text content; (Html.span ([(Attrs.class' (cls |> String.join ~sep:" "))] @ clickHandlers) [])]
+          | None -> [Html.text content]) in
+        Html.span
+          ([ Attrs.class'
+              ( ["fluid-entry"] @ backingNestingClass @ classes @ idclasses @ highlight
+              |> String.join ~sep:" " )] @ clickHandlers)
+          (innerNode @ nested)
       in
       if vs.permission = Some ReadWrite
       then [element [dropdown (); viewPlayIcon ast ti ~vs ~state]]
