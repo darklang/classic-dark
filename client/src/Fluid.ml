@@ -4806,7 +4806,7 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
         ] in
         let innerNode =
           (match innerNestingClass with
-          | Some cls -> [Html.text content; (Html.span ([(Attrs.class' (cls |> String.join ~sep:" "))] @ clickHandlers) [])]
+          | Some cls -> [(Html.span ([(Attrs.class' (cls |> String.join ~sep:" "))] @ clickHandlers) [Html.text content])]
           | None -> [Html.text content]) in
         Html.span
           ([ Attrs.class'
