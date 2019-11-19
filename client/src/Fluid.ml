@@ -585,12 +585,13 @@ let rec toTokens' (s : state) (e : ast) : token list =
         ; TIndent 2
         ; nested else' ]
   | EBinOp (id, op, lexpr, rexpr, _ster) ->
-      let (start, ending) =
+      let start, ending =
         match lexpr with
         | EThreadTarget _ ->
             ([], [])
         | _ ->
-            ([TParenOpen id; nested ~placeholderFor:(Some (op, 0)) lexpr; TSep], [TParenClose id])
+            ( [TParenOpen id; nested ~placeholderFor:(Some (op, 0)) lexpr; TSep]
+            , [TParenClose id] )
       in
       start
       @ [TBinOp (id, op); TSep; nested ~placeholderFor:(Some (op, 1)) rexpr]
@@ -710,10 +711,14 @@ let rec toTokens' (s : state) (e : ast) : token list =
         let tailNewline =
           if endsInNewline tailTokens
           then [TParenClose id]
-          else [TParenClose id; TNewline (Some (id, id, Some (List.length tail)))]
+          else
+            [TParenClose id; TNewline (Some (id, id, Some (List.length tail)))]
         in
-        [TParenOpen id; nested head; TNewline (Some (id, id, Some 0)); tailTokens]
-        @ tailNewline)
+        [ TParenOpen id
+        ; nested head
+        ; TNewline (Some (id, id, Some 0))
+        ; tailTokens ]
+        @ tailNewline )
   | EThreadTarget _ ->
       recover "should never be making tokens for EThreadTarget" []
   | EMatch (id, mexpr, pairs) ->
@@ -3149,7 +3154,7 @@ let doInsert' ~pos (letter : char) (ti : tokenInfo) (ast : ast) (s : state) :
   | TLambdaSep _
   | TMatchSep _
   | TMatchKeyword _
-  | TPartialGhost _ 
+  | TPartialGhost _
   | TParenOpen _ (* TODO(JULIAN): Is this reasonable? *)
   | TParenClose _ ->
       (ast, s)
@@ -4723,25 +4728,36 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
           then ["related-change"]
           else []
         in
-        let (backingNestingClass, innerNestingClass) = 
-          let (tokenBackingPrecedence, tokenInnerPrecedence) = 
-            (let currNesting = !nesting in
-              (match ti.token with 
-              | TParenOpen _ -> nesting := !nesting + 1; (currNesting, Some !nesting)
-              | TParenClose _ -> nesting := !nesting - 1; (!nesting, Some currNesting)
-              | _ -> (currNesting, None))) in
+        let backingNestingClass, innerNestingClass =
+          let tokenBackingPrecedence, tokenInnerPrecedence =
+            let currNesting = !nesting in
+            match ti.token with
+            | TParenOpen _ ->
+                nesting := !nesting + 1 ;
+                (currNesting, Some !nesting)
+            | TParenClose _ ->
+                nesting := !nesting - 1 ;
+                (!nesting, Some currNesting)
+            | _ ->
+                (currNesting, None)
+          in
           (* We want 0 precedence to only show up at the AST root and not in any wraparounds, so this goes 0123412341234... *)
-          let wraparoundPrecedenceClass ~ext n = (let wraparoundPrecedence = (if n > 0 then 
-                                          (((n-1) mod 4) + 1)
-                                          else n) in (["precedence-" ^ (wraparoundPrecedence |> string_of_int)] @ ext)) in
-          ((tokenBackingPrecedence |> (wraparoundPrecedenceClass ~ext:[])),
-           (tokenInnerPrecedence |> Option.map ~f:(wraparoundPrecedenceClass ~ext:["fluid-inner"])))
-           in
+          let wraparoundPrecedenceClass ~ext n =
+            let wraparoundPrecedence =
+              if n > 0 then ((n - 1) mod 4) + 1 else n
+            in
+            ["precedence-" ^ (wraparoundPrecedence |> string_of_int)] @ ext
+          in
+          ( tokenBackingPrecedence |> wraparoundPrecedenceClass ~ext:[]
+          , tokenInnerPrecedence
+            |> Option.map ~f:(wraparoundPrecedenceClass ~ext:["fluid-inner"])
+          )
+        in
         let classes = Token.toCssClasses ti.token in
         let idStr = deID (Token.tid ti.token) in
         let idclasses = ["id-" ^ idStr] in
-        let clickHandlers = [
-          ViewUtils.eventNeither
+        let clickHandlers =
+          [ ViewUtils.eventNeither
               ~key:("fluid-selection-dbl-click" ^ idStr)
               "dblclick"
               (fun ev ->
@@ -4801,17 +4817,26 @@ let toHtml ~(vs : ViewUtils.viewState) ~tlid ~state (ast : ast) :
                 | None ->
                     (* This will happen if it gets a selection and there is no
                      focused node (weird browser problem?) *)
-                    IgnoreMsg )
-          
-        ] in
+                    IgnoreMsg ) ]
+        in
         let innerNode =
-          (match innerNestingClass with
-          | Some cls -> [(Html.span ([(Attrs.class' (cls |> String.join ~sep:" "))] @ clickHandlers) [Html.text content])]
-          | None -> [Html.text content]) in
+          match innerNestingClass with
+          | Some cls ->
+              [ Html.span
+                  ([Attrs.class' (cls |> String.join ~sep:" ")] @ clickHandlers)
+                  [Html.text content] ]
+          | None ->
+              [Html.text content]
+        in
         Html.span
-          ([ Attrs.class'
-              ( ["fluid-entry"] @ backingNestingClass @ classes @ idclasses @ highlight
-              |> String.join ~sep:" " )] @ clickHandlers)
+          ( [ Attrs.class'
+                ( ["fluid-entry"]
+                  @ backingNestingClass
+                  @ classes
+                  @ idclasses
+                  @ highlight
+                |> String.join ~sep:" " ) ]
+          @ clickHandlers )
           (innerNode @ nested)
       in
       if vs.permission = Some ReadWrite
