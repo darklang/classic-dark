@@ -880,15 +880,15 @@ let () =
       t
         "copying first expression of pipe adds it to clipboard"
         aPipe
-        (copy (0, 2))
-        ("[]\n|>List::append [5]\n|>List::append [5]\n", "[]", 2) ;
+        (copy (1, 3))
+        ("([]\n|>List::append [5]\n|>List::append [5]\n)\n", "[]", 3) ;
       t
         "copying pipe adds it to clipboard"
         aPipe
-        (copy (0, 41))
-        ( "[]\n|>List::append [5]\n|>List::append [5]\n"
-        , "[]\n|>List::append [5]\n|>List::append [5]\n"
-        , 41 ) ;
+        (copy (0, 43))
+        ( "([]\n|>List::append [5]\n|>List::append [5]\n)\n"
+        , "([]\n|>List::append [5]\n|>List::append [5]\n)\n"
+        , 43 ) ;
       () ) ;
   describe "Lists" (fun () ->
       (* NOT WORKING YET
