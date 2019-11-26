@@ -726,11 +726,13 @@ let rec toTokens' (s : state) (e : ast) (b : Builder.t) : Builder.t =
             |> add (TSep (eid lexpr))
       in
       b
+      |> add (TParenOpen id)
       |> start
       |> add (TPartial (id, newName))
       |> addMany ghost
       |> add (TSep id)
       |> nest ~indent:2 ~placeholderFor:(Some (oldName, 1)) rexpr
+      |> add (TParenClose id)
   | EFnCall (id, fnName, args, ster) ->
       let displayName = ViewUtils.fnDisplayName fnName in
       let versionDisplayName = ViewUtils.versionDisplayName fnName in
