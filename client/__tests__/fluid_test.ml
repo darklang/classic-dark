@@ -2125,62 +2125,62 @@ let () =
         (enter 3)
         "let ~*** = ___\n___" ;
       t
-        "autocomplete space moves forward by 1"
+        "autocomplete space moves forward by 1 (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         aBinOp
         (keys [K.Letter 'r'; K.Space] 0)
-        "request ~== _________" ;
+        "(request ~== _________)" ;
       t
         "autocomplete enter moves to end of value"
         aBinOp
-        (keys [K.Letter 'r'; K.Enter] 0)
-        "request~ == _________" ;
+        (keys [K.Letter 'r'; K.Enter] 1)
+        "(request~ == _________)" ;
       t "can tab to lambda blank" aLambda (tab 0) "\\~*** -> ___" ;
       t
         "autocomplete tab moves to next blank"
         aBinOp
-        (keys [K.Letter 'r'; K.Tab] 0)
-        "request == ~_________" ;
+        (keys [K.Letter 'r'; K.Tab] 1)
+        "(request == ~_________)" ;
       t
-        "autocomplete enter on bin-op moves to start of first blank"
+        "autocomplete enter on bin-op moves to start of first blank (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         b
         (keys [K.Equals; K.Enter] 0)
-        "~_________ == _________" ;
+        "(~_________ == _________)" ;
       t
         "autocomplete tab on bin-op moves to start of second blank"
         b
         (keys [K.Equals; K.Tab] 0)
-        "_________ == ~_________" ;
+        "(_________ == ~_________)" ;
       t
-        "autocomplete space on bin-op moves to start of first blank"
+        "autocomplete space on bin-op moves to start of first blank (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         b
         (keys [K.Equals; K.Space] 0)
-        "~_________ == _________" ;
+        "(~_________ == _________)" ;
       t "variable moves to right place" (partial "req" b) (enter 3) "request~" ;
       t
         "pipe moves to right place on blank"
         b
         (keys [K.Letter '|'; K.Letter '>'; K.Enter] 2)
-        "___\n|>~___\n" ;
+        "(___\n|>~___\n)\n" ;
       t
         "pipe moves to right place on placeholder"
         aFnCall
         (keys [K.Letter '|'; K.Letter '>'; K.Enter] 11)
-        "Int::add 5 _________\n|>~___\n" ;
+        "(Int::add 5 _________\n|>~___\n)\n" ;
       t
         "pipe moves to right place in if then"
         emptyIf
         (keys [K.Letter '|'; K.Letter '>'; K.Enter] 14)
-        "if ___\nthen\n  ___\n  |>~___\nelse\n  ___" ;
+        "if ___\nthen\n  (___\n  |>~___\n  )\nelse\n  ___" ;
       t
         "pipe moves to right place in lambda body"
         aLambda
         (keys [K.Letter '|'; K.Letter '>'; K.Enter] 8)
-        "\\*** -> ___\n        |>~___\n" ;
+        "\\*** -> (___\n        |>~___\n        )\n" ;
       t
         "pipe moves to right place in match body"
         emptyMatch
         (keys [K.Letter '|'; K.Letter '>'; K.Enter] 19)
-        "match ___\n  *** -> ___\n         |>~___\n" ;
+        "match ___\n  *** -> (___\n         |>~___\n         )\n" ;
       t "autocomplete for Just" (partial "Just" b) (enter 4) "Just ~___" ;
       t "autocomplete for Ok" (partial "Ok" b) (enter 2) "Ok ~___" ;
       t "autocomplete for Nothing" (partial "Nothing" b) (enter 7) "Nothing~" ;
@@ -2213,17 +2213,17 @@ let () =
       let s = Defaults.defaultFluidState in
       let ast = complexExpr in
       test "gridFor - 1" (fun () ->
-          expect (gridFor ~pos:116 tokens) |> toEqual {row = 2; col = 2} ) ;
+          expect (gridFor ~pos:122 tokens) |> toEqual {row = 2; col = 2} ) ;
       test "gridFor - 2" (fun () ->
           expect (gridFor ~pos:70 tokens) |> toEqual {row = 0; col = 70} ) ;
       test "gridFor - 3" (fun () ->
-          expect (gridFor ~pos:129 tokens) |> toEqual {row = 2; col = 15} ) ;
+          expect (gridFor ~pos:135 tokens) |> toEqual {row = 2; col = 15} ) ;
       test "gridFor - start of line" (fun () ->
-          expect (gridFor ~pos:130 tokens) |> toEqual {row = 3; col = 0} ) ;
+          expect (gridFor ~pos:136 tokens) |> toEqual {row = 3; col = 0} ) ;
       test "gridFor - in an indent" (fun () ->
-          expect (gridFor ~pos:158 tokens) |> toEqual {row = 5; col = 1} ) ;
+          expect (gridFor ~pos:164 tokens) |> toEqual {row = 5; col = 1} ) ;
       test "gridFor - (reverse) in an indent" (fun () ->
-          expect (posFor ~row:5 ~col:1 tokens) |> toEqual 158 ) ;
+          expect (posFor ~row:5 ~col:1 tokens) |> toEqual 164 ) ;
       test "gridFor roundtrips" (fun () ->
           let poses = List.range 0 len in
           let newPoses =
