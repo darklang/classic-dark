@@ -743,9 +743,11 @@ let rec toTokens' (s : state) (e : ast) (b : Builder.t) : Builder.t =
         else [TFnVersion (id, partialName, versionDisplayName, fnName)]
       in
       b
+      |> add (TParenOpen id)
       |> add (TFnName (id, partialName, displayName, fnName, ster))
       |> addMany versionToken
       |> addArgs fnName id args
+      |> add (TParenClose id)
   | EPartial (id, newName, EFnCall (_, oldName, args, _)) ->
       let ghost = ghostPartial id newName oldName in
       b
