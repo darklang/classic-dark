@@ -1014,27 +1014,27 @@ let () =
   describe "Binops" (fun () ->
       tp "pipe key starts partial" trueBool (key K.Pipe 4) "true |~" ;
       t
-        "pressing enter completes partial"
+        "pressing enter completes partial (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         trueBool
         (keys [K.Pipe; K.Down; K.Enter] 4)
-        "true ||~ __________" ;
+        "(true ||~ __________)" ;
       t
-        "pressing space completes partial"
+        "pressing space completes partial (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         trueBool
         (keys [K.Pipe; K.Down; K.Space] 4)
-        "true || ~__________" ;
+        "(true || ~__________)" ;
       tp "pressing plus key starts partial" trueBool (key K.Plus 4) "true +~" ;
       tp "pressing caret key starts partial" anInt (key K.Caret 5) "12345 ^~" ;
       t
-        "pressing pipe twice then space completes partial"
+        "pressing pipe twice then space completes partial (* TODO(JULIAN): Fix this by fixing cursor placement when typing introduces parentheses *)"
         trueBool
         (keys [K.Pipe; K.Pipe; K.Space] 4)
-        "true || ~__________" ;
+        "(true || ~__________)" ;
       t
         "piping into newline creates pipe"
         trueBool
         (keys [K.Pipe; K.GreaterThan; K.Space] 4)
-        "true\n|>~___\n" ;
+        "(true\n|>~___\n)\n" ;
       t
         "pressing bs to clear partial reverts for blank rhs"
         (partial "|" (binop "||" anInt b))
@@ -1073,7 +1073,7 @@ let () =
       t
         "pressing bs on single digit binop leaves lhs"
         (binop "+" anInt anInt)
-        (bs 7)
+        (bs 8)
         "12345~" ;
       t
         "using del to remove an infix with a placeholder goes to right place"
@@ -1088,48 +1088,48 @@ let () =
       t
         "pressing del on single digit binop leaves lhs"
         (binop "+" anInt anInt)
-        (del 6)
+        (del 7)
         "12345~" ;
       t
-        "pressing del to remove a string binop combines lhs and rhs"
+        "pressing del to remove a string binop combines lhs and rhs (* TODO(JULIAN): Fix this by making infix partials preserve parens *)"
         (binop "++" (str "five") (str "six"))
-        (keys [K.Delete; K.Delete] 7)
+        (keys [K.Delete; K.Delete] 8)
         "\"five~six\"" ;
       t
-        "pressing backspace to remove a string binop combines lhs and rhs"
+        "pressing backspace to remove a string binop combines lhs and rhs (* TODO(JULIAN): Fix this by making infix partials preserve parens *)"
         (binop "++" (str "five") (str "six"))
-        (keys [K.Backspace; K.Backspace] 9)
+        (keys [K.Backspace; K.Backspace] 10)
         "\"five~six\"" ;
       t
         "pressing letters and numbers on a partial completes it"
         b
         (keys [K.Number '5'; K.Plus; K.Number '5'] 0)
-        "5 + 5~" ;
+        "(5 + 5~)" ;
       tp
         "pressing pipe while editing a partial works properly"
         (partial "|" (binop "||" anInt anInt))
         (key K.Pipe 7)
         "12345 ||~ 12345" ;
       tp
-        "pressing = after < should go to partial"
+        "pressing = after < should go to partial (* TODO(JULIAN): Fix this by making infix partials preserve parens *)"
         (binop "<" anInt anInt)
-        (key K.Equals 7)
-        "12345 <=~ 12345" ;
+        (key K.Equals 8)
+        "(12345 <=~ 12345)" ;
       t
         "changing binop to fn should work"
         (partial "Int::add" (binop "+" anInt anInt))
         (keys [K.Enter] 14)
         "Int::add 12345 ~12345" ;
       t
-        "changing fn to binops should work"
+        "changing fn to binops should work (* TODO(JULIAN): Unclear where cursor should go! Also, creating this situation in the first place is very hard because backspacing is insufficient! *)"
         (partial "+" (fn "Int::add" [anInt; anInt]))
         (keys [K.Enter] 1)
-        "~12345 + 12345" ;
+        "~(12345 + 12345)" ;
       t
-        "changing binop should work"
+        "changing binop should work (* TODO(JULIAN): Fix this by making infix partials preserve parens *)"
         (binop "<" anInt anInt)
-        (keys [K.Equals; K.Enter] 7)
-        "12345 <=~ 12345" ;
+        (keys [K.Equals; K.Enter] 8)
+        "(12345 <=~ 12345)" ;
       tp
         "adding binop in `if` works"
         (if' b b b)
@@ -1230,8 +1230,8 @@ let () =
            (* we have to insert the function with completion here
             * so the arguments are adjusted based on the pipe *)
            [K.Letter 'm'; K.Letter 'a'; K.Letter 'p'; K.Enter; K.Letter '\\']
-           6)
-        "___\n|>Dict::map \\~key, value -> ___\n" ;
+           7)
+        "(___\n|>Dict::map \\~key, value -> ___\n)\n" ;
       t
         "deleting a lambda argument should work"
         lambdaWithTwoBindings
@@ -1578,198 +1578,198 @@ let () =
         "move to the front of pipe on line 1"
         aPipe
         (key K.GoToStartOfLine 2)
-        "~[]\n|>List::append [5]\n|>List::append [5]\n" ;
+        "~([]\n|>List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "move to the end of pipe on line 1"
         aPipe
         (key K.GoToEndOfLine 0)
-        "[]~\n|>List::append [5]\n|>List::append [5]\n" ;
+        "([]~\n|>List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "move to the front of pipe on line 2"
         aPipe
         (key K.GoToStartOfLine 8)
-        "[]\n|>~List::append [5]\n|>List::append [5]\n" ;
+        "([]\n|>~List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "move to the end of pipe on line 2"
         aPipe
         (key K.GoToEndOfLine 5)
-        "[]\n|>List::append [5]~\n|>List::append [5]\n" ;
+        "([]\n|>List::append [5]~\n|>List::append [5]\n)\n" ;
       t
         "move to the front of pipe on line 3"
         aPipe
         (key K.GoToStartOfLine 40)
-        "[]\n|>List::append [5]\n|>~List::append [5]\n" ;
+        "([]\n|>List::append [5]\n|>~List::append [5]\n)\n" ;
       t
         "move to the end of pipe on line 3"
         aPipe
         (key K.GoToEndOfLine 24)
-        "[]\n|>List::append [5]\n|>List::append [5]~\n" ;
+        "([]\n|>List::append [5]\n|>List::append [5]~\n)\n" ;
       t
         "pipes appear on new lines"
         aPipe
         render
-        "~[]\n|>List::append [5]\n|>List::append [5]\n" ;
+        "~([]\n|>List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "nested pipes will indent"
         aNestedPipe
         render
-        "~[]\n|>List::append [5]\n               |>List::append [6]\n" ;
+        "~([]\n|>List::append ([5]\n               |>List::append [6]\n               )\n)\n" ;
       t
         "backspacing a pipe's first pipe works"
         aLongPipe
-        (bs 5)
-        "[]~\n|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n" ;
+        (bs 6)
+        "([]~\n|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n)\n" ;
       t
         "deleting a pipe's first pipe works"
         aLongPipe
-        (del 3)
-        "[]\n~|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n" ;
+        (del 4)
+        "([]\n~|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n)\n" ;
       t
         "backspacing a pipe's second pipe works"
         aLongPipe
-        (bs 24)
-        "[]\n|>List::append [2]~\n|>List::append [4]\n|>List::append [5]\n" ;
+        (bs 25)
+        "([]\n|>List::append [2]~\n|>List::append [4]\n|>List::append [5]\n)\n" ;
       t
         "deleting a pipe's second pipe works"
         aLongPipe
-        (del 22)
-        "[]\n|>List::append [2]\n~|>List::append [4]\n|>List::append [5]\n" ;
+        (del 23)
+        "([]\n|>List::append [2]\n~|>List::append [4]\n|>List::append [5]\n)\n" ;
       t
         "backspacing a pipe's third pipe works"
         aLongPipe
-        (bs 43)
-        "[]\n|>List::append [2]\n|>List::append [3]~\n|>List::append [5]\n" ;
+        (bs 44)
+        "([]\n|>List::append [2]\n|>List::append [3]~\n|>List::append [5]\n)\n" ;
       t
         "deleting a pipe's third pipe works"
         aLongPipe
-        (del 41)
-        "[]\n|>List::append [2]\n|>List::append [3]\n~|>List::append [5]\n" ;
+        (del 42)
+        "([]\n|>List::append [2]\n|>List::append [3]\n~|>List::append [5]\n)\n" ;
       t
         "backspacing a pipe's last pipe works"
         aLongPipe
-        (bs 62)
-        "[]\n|>List::append [2]\n|>List::append [3]\n|>List::append [4]~\n" ;
+        (bs 63)
+        "([]\n|>List::append [2]\n|>List::append [3]\n|>List::append [4]~\n)\n" ;
       t
         "deleting a pipe's last pipe works"
         aLongPipe
-        (del 60)
-        "[]\n|>List::append [2]\n|>List::append [3]\n|>List::append [4]~\n" ;
+        (del 61)
+        "([]\n|>List::append [2]\n|>List::append [3]\n|>List::append [4]~\n)\n" ;
       t
         "backspacing a pipe's first pipe that isn't in the first column works"
         aPipeInsideIf
-        (bs 21)
-        "if ___\nthen\n  []~\n  |>List::append [3]\n  |>List::append [4]\n  |>List::append [5]\nelse\n  ___" ;
+        (bs 22)
+        "if ___\nthen\n  ([]~\n  |>List::append [3]\n  |>List::append [4]\n  |>List::append [5]\n  )\nelse\n  ___" ;
       t
         "deleting a pipe's first pipe that isn't in the first column works"
         aPipeInsideIf
-        (del 19)
-        "if ___\nthen\n  []\n  ~|>List::append [3]\n  |>List::append [4]\n  |>List::append [5]\nelse\n  ___" ;
+        (del 20)
+        "if ___\nthen\n  ([]\n  ~|>List::append [3]\n  |>List::append [4]\n  |>List::append [5]\n  )\nelse\n  ___" ;
       t
         "backspacing a pipe's second pipe that isn't in the first column works"
         aPipeInsideIf
-        (bs 42)
-        "if ___\nthen\n  []\n  |>List::append [2]~\n  |>List::append [4]\n  |>List::append [5]\nelse\n  ___" ;
+        (bs 43)
+        "if ___\nthen\n  ([]\n  |>List::append [2]~\n  |>List::append [4]\n  |>List::append [5]\n  )\nelse\n  ___" ;
       t
         "deleting a pipe's second pipe that isn't in the first column works"
         aPipeInsideIf
-        (del 40)
-        "if ___\nthen\n  []\n  |>List::append [2]\n  ~|>List::append [4]\n  |>List::append [5]\nelse\n  ___" ;
+        (del 41)
+        "if ___\nthen\n  ([]\n  |>List::append [2]\n  ~|>List::append [4]\n  |>List::append [5]\n  )\nelse\n  ___" ;
       t
         "backspacing a pipe's third pipe that isn't in the first column works"
         aPipeInsideIf
-        (bs 63)
-        "if ___\nthen\n  []\n  |>List::append [2]\n  |>List::append [3]~\n  |>List::append [5]\nelse\n  ___" ;
+        (bs 64)
+        "if ___\nthen\n  ([]\n  |>List::append [2]\n  |>List::append [3]~\n  |>List::append [5]\n  )\nelse\n  ___" ;
       t
         "deleting a pipe's third pipe that isn't in the first column works"
         aPipeInsideIf
-        (del 61)
-        "if ___\nthen\n  []\n  |>List::append [2]\n  |>List::append [3]\n  ~|>List::append [5]\nelse\n  ___" ;
+        (del 62)
+        "if ___\nthen\n  ([]\n  |>List::append [2]\n  |>List::append [3]\n  ~|>List::append [5]\n  )\nelse\n  ___" ;
       t
         "backspacing a pipe's fourth pipe that isn't in the first column works"
         aPipeInsideIf
-        (bs 84)
-        "if ___\nthen\n  []\n  |>List::append [2]\n  |>List::append [3]\n  |>List::append [4]~\nelse\n  ___" ;
+        (bs 85)
+        "if ___\nthen\n  ([]\n  |>List::append [2]\n  |>List::append [3]\n  |>List::append [4]~\n  )\nelse\n  ___" ;
       t
         "deleting a pipe's fourth pipe that isn't in the first column works"
         aPipeInsideIf
-        (del 82)
-        "if ___\nthen\n  []\n  |>List::append [2]\n  |>List::append [3]\n  |>List::append [4]~\nelse\n  ___" ;
+        (del 83)
+        "if ___\nthen\n  ([]\n  |>List::append [2]\n  |>List::append [3]\n  |>List::append [4]~\n  )\nelse\n  ___" ;
       tp
         "backspacing a pipe's first fn works"
         aLongPipe
-        (bs 17)
-        "[]\n|>List::appen~@ [2]\n|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n" ;
+        (bs 18)
+        "([]\n|>List::appen~@ [2]\n|>List::append [3]\n|>List::append [4]\n|>List::append [5]\n)\n" ;
       tp
         "backspacing a pipe's first binop works"
         aBinopPipe
-        (bs 8)
-        "___\n|>+~@ \"asd\"\n" ;
+        (bs 9)
+        "(___\n|>+~@ \"asd\"\n)\n" ;
       t
         "adding infix functions adds the right number of blanks"
         emptyPipe
-        (keys [K.Plus; K.Enter] 6)
-        "___\n|>+ ~_________\n" ;
+        (keys [K.Plus; K.Enter] 7)
+        "(___\n|>+ ~_________\n)\n" ;
       t
         "creating a pipe from an fn via a partial works"
         (partial "|>" aFnCall)
         (enter 2)
         (* TODO: This really should end in 18, but too much work for now *)
-        "Int::add 5 ~_________\n|>___\n" ;
+        "(Int::add 5 ~_________\n|>___\n)\n" ;
       t
         "enter at the end of a pipe expr creates a new entry"
         aPipe
-        (enter 21)
-        "[]\n|>List::append [5]\n|>~___\n|>List::append [5]\n" ;
+        (enter 22)
+        "([]\n|>List::append [5]\n|>~___\n|>List::append [5]\n)\n" ;
       t
         "enter at the end of the opening expr creates a new entry"
         aPipe
-        (enter 2)
-        "[]\n|>~___\n|>List::append [5]\n|>List::append [5]\n" ;
+        (enter 3)
+        "([]\n|>~___\n|>List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "enter at the start of a line creates a new entry"
         aPipe
-        (enter 3)
-        "[]\n|>___\n~|>List::append [5]\n|>List::append [5]\n" ;
+        (enter 4)
+        "([]\n|>___\n~|>List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "enter at start of blank (within pipe) creates a new entry"
         aPipe
-        (enter 5)
-        "[]\n|>___\n|>~List::append [5]\n|>List::append [5]\n" ;
+        (enter 6)
+        "([]\n|>___\n|>~List::append [5]\n|>List::append [5]\n)\n" ;
       t
         "enter at the end of the last expr creates a new entry"
         aPipe
-        (enter 40)
-        "[]\n|>List::append [5]\n|>List::append [5]\n|>~___\n" ;
+        (enter 41)
+        "([]\n|>List::append [5]\n|>List::append [5]\n|>~___\n)\n" ;
       t
         "enter at the end of the last nested expr creates a new entry"
         aNestedPipe
-        (enter 55)
-        "[]\n|>List::append [5]\n               |>List::append [6]\n               |>~___\n" ;
+        (enter 57)
+        "([]\n|>List::append ([5]\n               |>List::append [6]\n               |>~___\n               )\n)\n" ;
       t
         "inserting a pipe into another pipe gives a single pipe1"
         (pipe five [listFn [rightPartial "|>" aList5]])
         (enter 23)
-        "5\n|>List::append [5]\n|>~___\n" ;
+        "(5\n|>List::append [5]\n|>~___\n)\n" ;
       t
         "inserting a pipe into another pipe gives a single pipe2"
         (pipe five [listFn [aList5]])
         (key K.ShiftEnter 19)
-        "5\n|>List::append [5]\n|>~___\n" ;
+        "(5\n|>List::append [5]\n|>~___\n)\n" ;
       t
         "inserting a pipe into another pipe gives a single pipe3"
         five
         (key K.ShiftEnter 1)
-        "5\n|>~___\n" ;
+        "(5\n|>~___\n)\n" ;
       t
         "shift enter at a let's newline creates the pipe on the rhs"
         nonEmptyLet
         (key K.ShiftEnter 11)
-        "let *** = 6\n          |>~___\n5" ;
+        "let *** = (6\n          |>~___\n          )\n5" ;
       t
         "shift enter in a record's newline creates the pipe in the expr, not the entire record"
         (record [("f1", fiftySix); ("f2", seventyEight)])
         (key K.ShiftEnter 11)
-        "{\n  f1 : 56\n       |>~___\n  f2 : 78\n}" ;
+        "{\n  f1 : (56\n       |>~___\n       )\n  f2 : 78\n}" ;
       (* TODO: test for prefix fns *)
       (* TODO: test for deleting pipeed infix fns *)
       (* TODO: test for deleting pipeed prefix fns *)
