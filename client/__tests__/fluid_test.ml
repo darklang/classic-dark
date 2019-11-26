@@ -2245,18 +2245,18 @@ let () =
       (* length *)
       test "up from first row is zero" (fun () ->
           expect (doUp ~pos:5 ast s |> fun s -> s.newPos) |> toEqual 0 ) ;
-      test "down from first row is end of last row" (fun () ->
-          expect (doDown ~pos:168 ast s |> fun s -> s.newPos) |> toEqual 174 ) ;
+      test "down from last row is end of last row" (fun () ->
+          expect (doDown ~pos:174 ast s |> fun s -> s.newPos) |> toEqual 180 ) ;
       (* end of short row *)
       test "up into shorter row goes to end of row" (fun () ->
-          expect (doUp ~pos:172 ast s |> fun m -> m.newPos) |> toEqual 156 ) ;
+          expect (doUp ~pos:178 ast s |> fun m -> m.newPos) |> toEqual 162 ) ;
       test "down into shorter row goes to end of row" (fun () ->
-          expect (doDown ~pos:143 ast s |> fun m -> m.newPos) |> toEqual 156 ) ;
+          expect (doDown ~pos:149 ast s |> fun m -> m.newPos) |> toEqual 162 ) ;
       (* start of indented row *)
-      test "up into indented row goes to first token" (fun () ->
-          expect (doUp ~pos:152 ast s |> fun m -> m.newPos) |> toEqual 130 ) ;
-      test "down into indented row goes to first token" (fun () ->
-          expect (doDown ~pos:109 ast s |> fun m -> m.newPos) |> toEqual 114 ) ;
+      test "up into indented row goes to first token" (fun () -> (* XXX(JULIAN): Test description seems wrong *)
+          expect (doUp ~pos:158 ast s |> fun m -> m.newPos) |> toEqual 136 ) ;
+      test "down into indented row goes to first token" (fun () -> (* XXX(JULIAN): Test description seems wrong *)
+          expect (doDown ~pos:115 ast s |> fun m -> m.newPos) |> toEqual 120 ) ;
       t
         "enter at the end of a line goes to first non-whitespace token"
         indentedIfElse
@@ -2288,22 +2288,22 @@ let () =
         (keys [K.Escape; K.Down; K.Down] 5)
         "if ___\nthen\n  ___~\nelse\n  ___" ;
       (* moving through the autocomplete *)
-      test "up goes through the autocomplete" (fun () ->
+      test "up goes through the autocomplete" (fun () -> (* XXX(JULIAN): Test description seems wrong *)
           expect
-            ( moveTo 143 s
+            ( moveTo 149 s
             |> (fun s -> updateKey K.Up ast s)
             |> (fun (ast, s) -> updateKey K.Up ast s)
             |> (fun (ast, s) -> updateKey K.Up ast s)
             |> fun (_, s) -> s.newPos )
           |> toEqual 13 ) ;
-      test "down goes through the autocomplete" (fun () ->
+      test "down goes through the autocomplete" (fun () -> (* XXX(JULIAN): Test description seems wrong *)
           expect
             ( moveTo 14 s
             |> (fun s -> updateKey K.Down ast s)
             |> (fun (ast, s) -> updateKey K.Down ast s)
             |> (fun (ast, s) -> updateKey K.Down ast s)
             |> fun (_, s) -> s.newPos )
-          |> toEqual 144 ) ;
+          |> toEqual 150 ) ;
       test "clicking away from autocomplete commits" (fun () ->
           expect
             (let ast = let' "var" (partial "false" b) b in
@@ -2403,15 +2403,15 @@ let () =
         (selectionPress K.Right 52 4)
         "let firstLetName = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\nlet ~secondLetName = \"0123456789\"\n\"RESULT\"" ;
       t
-        "selecting an expression pipes from it 1"
+        "selecting an expression pipes from it 1" (* XXX(JULIAN): Should also deselect! *)
         (binop "+" (int "4") (int "5"))
-        (selectionPress K.ShiftEnter 4 5)
-        "4 + 5\n    |>~___\n" ;
+        (selectionPress K.ShiftEnter 5 6)
+        "(4 + (5\n     |>~___\n     )\n)" ;
       t
-        "selecting an expression pipes from it 2"
+        "selecting an expression pipes from it 2" (* XXX(JULIAN): Should also deselect! *)
         (binop "+" (int "4") (int "5"))
-        (selectionPress K.ShiftEnter 5 4)
-        "4 + 5\n    |>~___\n" ;
+        (selectionPress K.ShiftEnter 6 5)
+        "(4 + (5\n     |>~___\n     )\n)" ;
       ts
         "cmd+a selects all"
         longLets
