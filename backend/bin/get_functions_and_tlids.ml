@@ -7,6 +7,7 @@ module RTT = Types.RuntimeT
 open Libcommon
 open Types
 open RTT.HandlerT
+module FluidExpression = Libshared.FluidExpression
 
 let flatmap ~(f : 'a -> 'b list) : 'a list -> 'b list =
   List.fold ~init:[] ~f:(fun acc e -> f e @ acc)
@@ -84,57 +85,81 @@ let pairs_of_fn (fn : fn) : (string * string) list =
   ; ("tlid", fn.tlid)
   ; ("fnname", fn.fnname) ]
 
+let bearerTokenParams (expr : RTT.expr) : FluidExpression.t list =
+  let fluidExpr : FluidExpression.t = Fluid.toFluidExpr expr in
+  let params = ref [] in
+  let processor fe =
+    ( match fe with
+    | FluidExpression.EFnCall (_, name, ps, _) ->
+        if name = "HttpClient::bearerToken" || name = "HttpClient::bearerToken_v1"
+        then
+          params := ps :: !params
+        else
+          ()
+    | _ ->
+        () ) ;
+    fe
+  in
+  fluidExpr |> FluidExpression.postTraversal ~f:processor |> ignore ;
+  (!params) |> List.concat |> List.sort ~compare:FluidExpression.compare
+
+let strings_of_expr (expr : RTT.expr) : string list =
+  let fluidExpr : FluidExpression.t = Fluid.toFluidExpr expr in
+  let strings = ref [] in
+  let processor fe =
+    ( match fe with
+    | FluidExpression.EString (_, str) ->
+        strings := str :: !strings
+    | _ ->
+        () ) ;
+    fe
+  in
+  fluidExpr |> FluidExpression.postTraversal ~f:processor |> ignore ;
+  (!strings) |> List.map ~f:String.lowercase |> List.sort ~compare:compare_string
+
 type reason =
   (* first string is handler/fn name *)
   StringLiteral of string * string
   (* handler/userfn *)
-  | BearerToken of string
+  | BearerToken of string * string
   (* handler/userfn *)
-  | BasicAuth of string
+  | BasicAuth of string * string
   (* handler/userfn *)
-  | HttpclientCall of string
+  | HttpclientCall of string * string
   (* handler/userfn *)
-  | Crypto of string
-  (* userfn *)
-  | FnCallOnlyLiteral of string
+  | Crypto of string * string
+  | API of string * string
+  | Password of string * string
 
-let show_reason reason =
+let show_reason host reason =
+  let reason_to_link host typ id =
+    "https://darklang.com/a/" ^ host ^ "#" ^ typ ^ "=" ^ id
+  in
   match reason with
-  | StringLiteral (tlname, literal) -> "String literal > 12 (" ^ literal ^ ") in handler/fn: " ^ tlname
-  | BearerToken tlname -> "Httpclient::bearerToken/Httpclient::bearerToken_v1 used in handler/fn: " ^ tlname
-  | BasicAuth tlname -> "Httpclient::basicAuth/Httpclient::basicAuth_v1 used in handler/fn: " ^ tlname
-  | HttpclientCall tlname -> "Httpclient::{get/post/put/delete/patch}_v{1,2,3,4,5} used in handler/fn: " ^ tlname
-  | Crypto tlname -> "Password::hash/Crypto::sha256/Crypto::sha384/Crypto:sha256hmac/Crypto::sha1hmac used in handler/fn: " ^ tlname
-  | FnCallOnlyLiteral fnname -> "Function named: " ^ fnname ^ " contains only a literal string"
+  | StringLiteral (typ, id) -> reason_to_link host typ id
+  | BearerToken (typ, id) -> reason_to_link host typ id
+  | BasicAuth (typ, id) -> reason_to_link host typ id
+  | HttpclientCall (typ, id) -> reason_to_link host typ id
+  | Crypto (typ, id) -> reason_to_link host typ id
+  | API (typ, id) -> reason_to_link host typ id
+  | Password (typ, id) -> reason_to_link host typ id
 
-let show_reasons reasons =
+let show_reasons host reasons =
   reasons
-  |> List.map ~f:show_reason
-  |> Tc.String.join ~sep:", "
-  |> fun str -> "{" ^ str ^ "}"
+  |> List.map ~f:(show_reason host)
+  |> Tc.String.join ~sep:","
 
 let process_canvas (canvas : RTT.expr Canvas.canvas ref) : (reason list) option =
-  let handler_name (handler : RuntimeT.expr handler) =
-    let spec = handler.spec in
-    String.concat
-      ( [spec.module_; spec.name; spec.modifier]
-      |> List.map ~f:(function Filled (_, s) -> s | Partial _ | Blank _ -> "")
-      )
-      ~sep:"-"
-  in
   let handlers =
     !(canvas : RuntimeT.expr Canvas.canvas ref).handlers
-    |> IDMap.data
-    |> List.filter_map ~f:Toplevel.as_handler
-    |> List.map ~f:(fun h -> (handler_name h, h.ast))
+    |> IDMap.to_alist
+    |> List.filter_map ~f:(fun (tlid, tl) ->
+        tl |> Toplevel.as_handler |> Option.map ~f:(fun h -> ("handler", tlid, h.ast)))
   in
   let functions =
     !(canvas : RuntimeT.expr Canvas.canvas ref).user_functions
-    |> IDMap.data
-    |> List.filter_map ~f:(fun (uf : RuntimeT.expr RuntimeT.user_fn) ->
-        uf.metadata.name
-        |> (fun bo -> match bo with Filled (_, n) -> Some n | _ -> None)
-        |> Option.map ~f:(fun name -> (name, uf.ast)))
+    |> IDMap.to_alist
+    |> List.map ~f:(fun (tlid, (uf : RuntimeT.expr RuntimeT.user_fn)) -> ("fn", tlid, uf.ast))
   in
   let tls = handlers @ functions in
   let strip_version fnname =
@@ -142,20 +167,61 @@ let process_canvas (canvas : RTT.expr Canvas.canvas ref) : (reason list) option 
     |> String.split ~on:'_'
     |> List.hd_exn
   in
+  let shouldFilterStoreReport (c : RTT.expr Canvas.canvas) (id : string) (ast : RTT.expr) =
+    (* id of Worker::storeReport handler *)
+    if id ="681287691"
+    then
+      let knownBearerTokenParams = [FluidExpression.EFnCall (id_of_string "794305869", "sampleAirtableKey", [], FluidExpression.NoRail)] in
+      let _origknownSampleKeyStrings = ["note, this key is solely for the sample and is not used in any places. the sample is regularly reviewed."; "keyAqo8LWU2tImZF4"] in
+      let knownSampleKeyStrings = ["note, this key is solely for the sample and is not used in any places. the sample is regularly reviewed."; "keyaqo8lwu2timzf4"] |> List.sort ~compare:compare_string
+      in
+      let sampleKeyStringsMatch, stringsss =
+        match IDMap.find c.user_functions (id_of_int 646253428) with
+        | Some kfn ->
+            ((strings_of_expr (kfn.ast)) = knownSampleKeyStrings, (strings_of_expr (kfn.ast)))
+        | None ->
+            (true, [])
+      in
+      let list_eq a b =
+        List.zip a b
+        |> Option.map ~f:(fun zipped -> List.for_all ~f:(fun (ax, bx) -> FluidExpression.testEqualIgnoringIds ax bx) zipped)
+        |> Option.value ~default:false
+      in
+      let bearerTokenParamsMatch = list_eq (bearerTokenParams ast) knownBearerTokenParams in
+      Log.infO "shouldFilter" ~params:[("host", c.host); ("btpm", string_of_bool bearerTokenParamsMatch); ("sksm", string_of_bool sampleKeyStringsMatch)];
+      if bearerTokenParamsMatch && sampleKeyStringsMatch
+      then true
+      else
+        begin
+          Log.infO "bearer" ~params:[("orig", Log.dump knownBearerTokenParams); ("new", Log.dump (bearerTokenParams ast))];
+          Log.infO "sk" ~params:[("orig", Log.dump knownSampleKeyStrings); ("new", Log.dump (stringsss))];
+          false
+        end
+    else
+      false
+  in
   let fnCallReasons =
     tls
-    |> List.fold ~init:[] ~f:(fun acc (name, ast) ->
+    |> List.fold ~init:[] ~f:(fun acc (typ, id, ast) ->
+        let id = Int63.to_string id in
         let fnCalls = ast |> fnnames_of_expr |> List.map ~f:strip_version in
         Log.infO "fncalls" ~data:(Log.dump fnCalls);
-        if Tc.List.member ~value:"HttpClient::bearerToken" fnCalls
-        then (BearerToken name) :: acc
-        else if Tc.List.member ~value:"HttpClient::basicAuth" fnCalls
-        then (BasicAuth name) :: acc
-        (* else if Tc.List.member ~value:"HttpClient::get" fnCalls || Tc.List.member ~value:"HttpClient::post" fnCalls || Tc.List.member ~value:"HttpClient::put" fnCalls  || Tc.List.member ~value:"HttpClient::delete" fnCalls || Tc.List.member ~value:"HttpClient::patch" fnCalls *)
-        (* then (HttpclientCall name) :: acc *)
-        else if Tc.List.member ~value:"Password::hash" fnCalls || Tc.List.member ~value:"Password::check" fnCalls || Tc.List.member ~value:"JWT::signAndEncode" fnCalls || Tc.List.member ~value:"JWT::signAndEncodeWithHeaders" fnCalls  || Tc.List.member ~value:"JWT::verifyAndExtract" fnCalls || Tc.List.member ~value:"Crypto::sha256" fnCalls || Tc.List.member ~value:"Crypto::sha384" fnCalls || Tc.List.member ~value:"Crypto::sha256hmac" fnCalls || Tc.List.member ~value:"Crypto::sha1hmac" fnCalls
-        then (Crypto name) :: acc
-        else acc)
+        if shouldFilterStoreReport !canvas id ast
+        then acc
+        else
+          if Tc.List.member ~value:"HttpClient::bearerToken" fnCalls
+          then (BearerToken (typ, id)) :: acc
+          else if Tc.List.member ~value:"HttpClient::basicAuth" fnCalls
+          then (BasicAuth (typ, id)) :: acc
+          (* else if Tc.List.member ~value:"HttpClient::get" fnCalls || Tc.List.member ~value:"HttpClient::post" fnCalls || Tc.List.member ~value:"HttpClient::put" fnCalls  || Tc.List.member ~value:"HttpClient::delete" fnCalls || Tc.List.member ~value:"HttpClient::patch" fnCalls *)
+          (* then (HttpclientCall name) :: acc *)
+          (* if Tc.List.member ~value:"Password::hash" fnCalls || Tc.List.member ~value:"Password::check" fnCalls *)
+          (* then (Password (typ, id)) :: acc *)
+          else if Tc.List.member ~value:"JWT::signAndEncode" fnCalls || Tc.List.member ~value:"JWT::signAndEncodeWithHeaders" fnCalls  || Tc.List.member ~value:"JWT::verifyAndExtract" fnCalls || Tc.List.member ~value:"Crypto::sha256" fnCalls || Tc.List.member ~value:"Crypto::sha384" fnCalls || Tc.List.member ~value:"Crypto::sha256hmac" fnCalls || Tc.List.member ~value:"Crypto::sha1hmac" fnCalls
+          then (Crypto (typ, id)) :: acc
+          else if List.length (List.filter ~f:(fun fn -> String.is_prefix ~prefix:"dark/" fn) fnCalls) <> 0 || Tc.List.member ~value:"Twilio::sendText" fnCalls
+          then (API (typ, id)) :: acc
+          else acc)
   in
   let reasons = fnCallReasons in
   if List.length reasons = 0
@@ -220,5 +286,5 @@ let () =
             |> Option.bind ~f:process_canvas
             |> Option.map ~f:(fun reasons -> (host, reasons)))
       |> List.iter ~f:(fun (host, reasons) ->
-          Log.infO "Hit" ~params:[("canvas", host); ("reasons", show_reasons reasons)]));
+          print_endline (host ^ "," ^ (show_reasons host reasons))));
   ()
