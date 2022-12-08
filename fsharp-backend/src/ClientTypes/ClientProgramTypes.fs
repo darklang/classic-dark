@@ -89,6 +89,8 @@ type Expr =
   | EMatch of id * Expr * List<MatchPattern * Expr>
   | EPipeTarget of id
   | EFeatureFlag of id * string * Expr * Expr * Expr
+  | EAnd of id * Expr * Expr
+  | EOr of id * Expr * Expr
 
 
 type DType =
