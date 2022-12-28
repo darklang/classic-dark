@@ -33,6 +33,7 @@ resource "google_cloud_run_service" "run_service" {
         "autoscaling.knative.dev/maxScale" : "10"
         "run.googleapis.com/cloudsql-instances" : "balmy-ground-195100:us-west1:dark-west"
         "run.googleapis.com/startup-cpu-boost" : "true"
+        "run.googleapis.com/execution-environment" : "gen2"
       }
     }
 
