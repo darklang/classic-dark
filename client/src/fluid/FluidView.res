@@ -59,9 +59,10 @@ let viewArrow = (curID: id, srcID: id): Html.html<msg> => {
 }
 
 let viewDval = (dval, tlid, secrets, ~canCopy: bool) => {
-  let text = dval->Runtime.toRepr->Util.hideSecrets(secrets)
+  let text = dval->Runtime.toStringRepr
+  let node = dval->Runtime.toRepr(secrets)
   list{
-    Html.text(text),
+    node,
     if canCopy {
       viewCopyButton(tlid, text)
     } else {
@@ -331,7 +332,7 @@ let viewReturnValue = (vp: ViewUtils.viewProps, dragEvents: ViewUtils.domEventLi
       }
 
       let returnHtml = {
-        let dvalString = Runtime.toRepr(dval)
+        let dvalString = Runtime.toStringRepr(dval)
         let newLine = if String.includes(~substring="\n", dvalString) {
           Html.br(list{})
         } else {

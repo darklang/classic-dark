@@ -105,14 +105,18 @@ let viewTrace = (
     switch value {
     | None => Icons.fontAwesome("spinner")
     | Some(v) =>
-      let asString = Runtime.inputValueAsString(tl, v)
-      let asString = if String.length(asString) == 0 {
-        "No input parameters"
-      } else {
-        Util.hideSecrets(asString, vp.secretValues)
-      }
-
-      Html.div(list{Vdom.noProp}, list{Html.text(asString)})
+      let inputValue = // Merge sample + trace, preferring trace.
+      // This ensures newly added parameters show as incomplete.
+      Belt.Map.String.merge(Runtime.sampleInputValue(tl), v, (_key, sampleVal, traceVal) =>
+        switch (sampleVal, traceVal) {
+        | (None, None) => None
+        | (Some(v), None) => Some(v)
+        | (None, Some(v)) => Some(v)
+        | (Some(_sample), Some(trace)) => Some(trace)
+        }
+      ) |> (dict => RT.Dval.DObj(dict))
+      let html = Runtime.toRepr(inputValue, vp.secretValues)
+      Html.div(list{Vdom.noProp}, list{html})
     }
   }
 
@@ -121,7 +125,7 @@ let viewTrace = (
   | Some(ts) =>
     let human = Js.Date.now() -. Js.Date.parseAsFloat(ts) |> Util.humanReadableTimeElapsed
 
-    Html.div(list{Attrs.title(ts)}, list{Html.text("Made " ++ (human ++ " ago"))})
+    Html.div(list{Attrs.title(ts)}, list{Html.text("Made " ++ human ++ " ago")})
   }
 
   let dotHtml = if isHover && !isActive {

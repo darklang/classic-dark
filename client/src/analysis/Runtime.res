@@ -33,8 +33,84 @@ let stripQuotes = (s: string): string => {
   s
 }
 
+module Html = Tea.Html
+module Attrs = Tea.Attrs
+
+let tw = Attrs.class
+let tw2 = (c1, c2) => Attrs.class(`${c1} ${c2}`)
+
+let toRepr = (dval: RT.Dval.t, secrets: list<string>): Html.html<AppTypes.msg> => {
+  let pill = (style: string, text: string) =>
+    Html.span(list{tw2(style, %twc("rounded"))}, list{Html.text(text)})
+  let toRepr_ = (_indent: int, dv: RT.Dval.t): Html.html<AppTypes.msg> => {
+    switch dv {
+    | DPassword(_) => pill(%twc("text-red"), "Password")
+    | DStr(s) =>
+      Html.span(list{tw(%twc("text-purple"))}, list{Html.text(`"${Util.hideSecrets(s, secrets)}"`)})
+    | _ => Html.text("TODO")
+    // | DChar(c) => Html.text(`'${c}'`)
+    // | DInt(i) => Html.text(Int64.to_string(i))
+    // | DBool(true) => Html.text("true")
+    // | DBool(false) => Html.text("false")
+    // | DFloat(f) => Html.text(Js.Float.toString(f))
+    // | DNull => Html.txt("null")
+    // | DFnVal(Lambda({parameters, body, _})) =>
+    //   // TODO: show relevant symtable entries
+    //   let params = parameters->List.map(~f=Tuple2.second)->List.join(~sep=", ")
+    //   Html.text(
+    //   "\\" ++ params ++ " -> " ++ RuntimeTokenizer.eToHumanString(body)
+    //   |> Util.hideSecrets
+    //   )
+    // | DFnVal(FnName(_)) => Html.text("TODO")
+    // | DIncomplete(_) => Html.text("<incomplete>")
+    // | DError(_, msg) => Html.text(`<error: ${Util.hideSecrets(msg)}>`)
+    // | DDate(s) => wrap(s)
+    // | DDB(s) => wrap(s)
+    // | DUuid(s) => wrap(Util.hideSecrets(s))
+    // | DHttpResponse(Redirect(url)) => "302 " ++ Util.hideSecrets(url)
+    // | DHttpResponse(Response(code, headers, hdv)) =>
+    //   let headerString =
+    //     headers
+    //     |> List.map(~f=((k, v)) => k ++ ": " ++ v)
+    //     |> String.join(~sep=", ")
+    //     |> (s => "{ " ++ s ++ " }")
+    //   Int64.to_string(code) ++ " " ++ headerString ++ nl ++ toRepr_(indent, hdv)
+    // | DList(l) =>
+    //   if l == list{} {
+    //     "[]"
+    //   } else {
+    //     let elems = Js.Array.joinWith(", ", l->List.map(~f=toRepr_(indent))->List.toArray)
+    //     `[${inl}${elems}${nl}]`
+    //   }
+    // | DTuple(first, second, theRest) =>
+    //   let exprs = list{first, second, ...theRest}
+    //   "(" ++ (String.join(~sep=", ", List.map(~f=toRepr_(indent), exprs)) ++ ")")
+    // | DObj(o) =>
+    //   if Belt.Map.String.isEmpty(o) {
+    //     "{}"
+    //   } else {
+    //     let strs =
+    //       o
+    //       |> Belt.Map.String.toList
+    //       |> List.map(~f=((key, value)) => key ++ ": " ++ toRepr_(indent, value))
+
+    //     let elems = String.join(~sep=`, ${inl}`, strs)
+    //     `{${inl}${elems}${nl}}`
+    //   }
+
+    // | DOption(None) => "Nothing"
+    // | DOption(Some(dv_)) => "Just " ++ toRepr_(indent, dv_)
+    // | DResult(Ok(dv_)) => "Ok " ++ toRepr_(indent, dv_)
+    // | DResult(Error(dv_)) => "Error " ++ toRepr_(indent, dv_)
+    // | DErrorRail(dv_) => wrap(toRepr_(indent, dv_))
+    // | DBytes(s) => "<Bytes: length=" ++ (Bytes.length(s) |> string_of_int) ++ ">"
+    }
+  }
+  toRepr_(0, dval)
+}
+
 // This should be kept sync with backend DvalReprDeveloper.toRepr
-let toRepr = (dval: RT.Dval.t): string => {
+let toStringRepr = (dval: RT.Dval.t): string => {
   let rec toRepr_ = (indent: int, dv: RT.Dval.t): string => {
     let makeSpaces = len => String.repeat(~count=len, " ")
     let nl = "\n" ++ makeSpaces(indent)
@@ -143,7 +219,11 @@ let sampleInputValue = (tl: toplevel): AnalysisTypes.InputValueDict.t =>
   |> Array.map(~f=v => (v, RT.Dval.DIncomplete(SourceNone)))
   |> Belt.Map.String.fromArray
 
-let inputValueAsString = (tl: toplevel, iv: AnalysisTypes.InputValueDict.t): string => {
+let inputValueAsHtml = (
+  secrets: list<string>,
+  tl: toplevel,
+  iv: AnalysisTypes.InputValueDict.t,
+): Html.html<AppTypes.msg> => {
   // Merge sample + trace, preferring trace.
   // This ensures newly added parameters show as incomplete.
 
@@ -156,14 +236,7 @@ let inputValueAsString = (tl: toplevel, iv: AnalysisTypes.InputValueDict.t): str
     }
   ) |> (dict => RT.Dval.DObj(dict))
 
-  dval
-  |> toRepr
-  |> String.split(~on="\n")
-  |> List.drop(~count=1)
-  |> List.initial
-  |> Option.unwrap(~default=list{})
-  |> List.map(~f=String.dropLeft(~count=2))
-  |> String.join(~sep="\n")
+  toRepr(dval, secrets)
 }
 
 let pathFromInputVars = (iv: AnalysisTypes.InputValueDict.t): option<string> =>

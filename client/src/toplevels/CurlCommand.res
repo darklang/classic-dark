@@ -57,7 +57,7 @@ let objAsHeaderCurl = (dv: RT.Dval.t): option<string> =>
     // the request without changing the value of this header
     |> List.filter(~f=((k, _)) => k !== "content-length")
     |> List.map(~f=((k, v)) =>
-      "-H '" ++ (k ++ (":" ++ ((Runtime.toRepr(v) |> Runtime.stripQuotes) ++ "'")))
+      "-H '" ++ (k ++ (":" ++ ((Runtime.toStringRepr(v) |> Runtime.stripQuotes) ++ "'")))
     )
     |> String.join(~sep=" ")
     |> (s => Some(s))
@@ -191,7 +191,7 @@ let curlFromHttpClientCall = (m: AppTypes.model, tlid: TLID.t, id: id, name: FQF
 
     let base_url = switch url {
     | DStr(s) => s
-    | _ => recover("Expected url arg to be a DStr", url) |> Runtime.toRepr
+    | _ => recover("Expected url arg to be a DStr", url) |> Runtime.toStringRepr
     }
 
     let qps = switch query {
