@@ -475,11 +475,11 @@ workflows:
       - build-blazor
 
       # expensive tests
-      - integration-tests:
-          requires:
-            - build-client
-            - build-blazor
-            - build-backend
+      # - integration-tests: # disabled as the editor isn't getting updates
+      #     requires:
+      #       - build-client
+      #       - build-blazor
+      #       - build-backend
 
       - gcp-containers-test:
           # This is fully covered by push-assets-to-gcp, so no need to do it twice
@@ -526,7 +526,10 @@ workflows:
           requires:
             - deploy-lock
             - validate-honeycomb-config
-            - integration-tests
+            # - integration-tests
+            - build-client # integration tests are disabled
+            - build-blazor # integration tests are disabled
+            - build-backend # integration tests are disabled
             - push-containers-to-gcp
             - push-assets-to-gcp
             - static-checks
@@ -546,7 +549,7 @@ workflows:
             - build-backend
             - build-blazor
             - gcp-containers-test
-            - integration-tests
+            # - integration-tests
             - static-checks
             - predeployment-checks
             - validate-honeycomb-config
