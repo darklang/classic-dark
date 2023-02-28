@@ -39,7 +39,7 @@ if [[ ! -v NEVER_REBUILD_DOCKER ]]; then
   # Most of the work is done to enable arm64 builds, but rescript 9.1.4 won't
   # build on arm64 (10 supposedly does), and dotnet won't support building wasm
   # until dotnet 8 at the earliest.
-  docker buildx build --platform linux/amd64 -t dark --build-arg uid="$(id -u)" --build-arg gid="$gid" .
+  docker buildx build --platform linux/amd64 -t dark-stable --build-arg uid="$(id -u)" --build-arg gid="$gid" .
 
   echo "Removing running containers"
   c=$(docker ps --filter "name=dark-builder" -q)
@@ -74,10 +74,10 @@ fi
 MOUNTS="--mount type=bind,src=$PWD,dst=/home/dark/app"
 
 # Avoid docker syncing everything to the host, slowing compiles down by 5x
-MOUNTS+=" --mount type=volume,src=dark_fsharp_build,dst=/home/dark/app/backend/Build"
-MOUNTS+=" --mount type=volume,src=dark_lib,dst=/home/dark/app/lib"
-MOUNTS+=" --mount type=volume,src=dark_node_modules,dst=/home/dark/app/node_modules"
-MOUNTS+=" --mount type=volume,src=dark_nuget,dst=/home/dark/.nuget"
+MOUNTS+=" --mount type=volume,src=dark_stable_fsharp_build,dst=/home/dark/app/backend/Build"
+MOUNTS+=" --mount type=volume,src=dark_stable_lib,dst=/home/dark/app/lib"
+MOUNTS+=" --mount type=volume,src=dark_stable_node_modules,dst=/home/dark/app/node_modules"
+MOUNTS+=" --mount type=volume,src=dark_stable_nuget,dst=/home/dark/.nuget"
 
 if [[ -e "$HOME/.config/gcloud" ]]; then
   MOUNTS="$MOUNTS --mount type=bind,src=$HOME/.config/gcloud,dst=/home/dark/.config/gcloud"
@@ -135,14 +135,14 @@ docker run \
   --platform linux/amd64 \
   --dns 8.8.8.8 \
   --dns 8.8.4.4 \
-  --name dark-builder \
-  --hostname dark-dev \
+  --name dark-stable-builder\
+  --hostname dark-stable-dev \
   --env-file "$ENV_FILE" \
   --env HOST_PWD="$PWD" \
   --env IN_DEV_CONTAINER=true \
-  -v pgconf:/etc/postgresql \
-  -v pglogs:/var/log/postgresql \
-  -v pgdata:/var/lib/postgresql \
+  -v pgconf-stable:/etc/postgresql \
+  -v pglogs-stable:/var/log/postgresql \
+  -v pgdata-stable:/var/lib/postgresql \
   -v cloudstorage:/home/dark/cloud-storage \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 9000:9000 \
@@ -156,5 +156,5 @@ docker run \
   --security-opt seccomp=unconfined \
   --ulimit=nofile=65536:65536 \
   $MOUNTS \
-  dark \
+  dark-stable \
   scripts/build/_build-server "${@}"

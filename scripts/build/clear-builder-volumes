@@ -7,13 +7,13 @@ set -euo pipefail
 # Must be run from outside (stopped) container
 
 docker volume rm \
-  dark_build \
-  dark_dotesy \
-  dark_esy \
-  dark_fsharp_build \
-  dark_lib \
-  dark_node_modules \
-  dark_nuget \
-  darklang-dark-extension-volume \
-  darklang-dark-extension-volume-insiders \
-  vscode
+  dark_stable_build \
+  dark_stable_dotesy \
+  dark_stable_esy \
+  dark_stable_fsharp_build \
+  dark_stable_lib \
+  dark_stable_node_modules \
+  dark_stable_nuget \
+  darklang-dark-stable-extension-volume \
+  darklang-dark-stable-extension-volume-insiders \
+  vscode-dark-stable
