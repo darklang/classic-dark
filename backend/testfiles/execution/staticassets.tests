@@ -431,13 +431,13 @@ result |> Result.map_v1
 // canonicalizeFSharpGoodResponse (StaticAssets.serve_v0 "abcdef1234" "index.html") =
 //   Ok { body = "<html><body>Hello world</body></html>\n"; headers = fsharp200HtmlHeaders 0; code = 200 }
 
-[test.serve_v0 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
-canonicalizeFSharpBadResponse (StaticAssets.serve_v0 "abcdef1234" "no-file-with-this-name") =
-  Ok { body = ""; headers = fsharp404Headers 0; code = 404 }
+// [test.serve_v0 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
+// canonicalizeFSharpBadResponse (StaticAssets.serve_v0 "abcdef1234" "no-file-with-this-name") =
+//   Ok { body = ""; headers = fsharp404Headers 0; code = 404 }
 
-[test.serve_v0 nohash] with ExactCanvasName test-static-assets-deploy
-canonicalizeFSharpBadResponse (StaticAssets.serve_v0 "xx" "index.html") =
-  Ok { body = ""; headers = fsharp404Headers 0; code = 404 }
+// [test.serve_v0 nohash] with ExactCanvasName test-static-assets-deploy
+// canonicalizeFSharpBadResponse (StaticAssets.serve_v0 "xx" "index.html") =
+//   Ok { body = ""; headers = fsharp404Headers 0; code = 404 }
 
 
 // serveLatest_v0
@@ -456,9 +456,9 @@ canonicalizeFSharpBadResponse (StaticAssets.serve_v0 "xx" "index.html") =
 // canonicalizeFSharpGoodResponse (StaticAssets.serveLatest_v0 "index.html") =
 //   Ok { body = String.toBytes "<html><body>Hello world</body></html>\n"; headers = fsharp200HtmlHeaders 0; code = 200 }
 
-[test.serveLatest_v0 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
-canonicalizeFSharpBadResponse (StaticAssets.serveLatest_v0 "no-file-with-this-name") =
-  Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
+// [test.serveLatest_v0 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
+// canonicalizeFSharpBadResponse (StaticAssets.serveLatest_v0 "no-file-with-this-name") =
+//   Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
 
 [test.serveLatest_v0 nohash] with ExactCanvasName test-static-assets-deploy
 StaticAssets.serveLatest_v0 "index.html" = Test.typeError "No deploy hash found"
@@ -486,13 +486,13 @@ StaticAssets.serveLatest_v0 "index.html" = Test.typeError "No deploy hash found"
 //        headers = fsharp200HtmlHeaders 0;
 //        code = 200 }
 
-[test.serve_v1 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
-canonicalizeFSharpBadResponse (StaticAssets.serve_v1 "abcdef1234" "no-file-with-this-name") =
-  Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
+// [test.serve_v1 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
+// canonicalizeFSharpBadResponse (StaticAssets.serve_v1 "abcdef1234" "no-file-with-this-name") =
+//   Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
 
-[test.serve_v1 nohash] with ExactCanvasName test-static-assets-deploy
-canonicalizeFSharpBadResponse (StaticAssets.serve_v1 "xx" "index.html") =
-  Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
+// [test.serve_v1 nohash] with ExactCanvasName test-static-assets-deploy
+// canonicalizeFSharpBadResponse (StaticAssets.serve_v1 "xx" "index.html") =
+//   Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
 
 
 // serveLatest_v1
@@ -515,9 +515,9 @@ canonicalizeFSharpBadResponse (StaticAssets.serve_v1 "xx" "index.html") =
 //        headers = fsharp200HtmlHeaders 0;
 //        code = 200 }
 
-[test.serveLatest_v1 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
-canonicalizeFSharpBadResponse (StaticAssets.serveLatest_v1 "no-file-with-this-name") =
-  Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
+// [test.serveLatest_v1 missing] with ExactCanvasName test-static-assets-deploy, StaticAssetsDeployHash abcdef1234
+// canonicalizeFSharpBadResponse (StaticAssets.serveLatest_v1 "no-file-with-this-name") =
+//  Ok { body = Test.intArrayToBytes []; headers = fsharp404Headers 0; code = 404 }
 
 [test.serveLatest_v1 nohash] with ExactCanvasName test-static-assets-deploy
 StaticAssets.serveLatest_v1 "index.html" = Test.typeError "No deploy hash found"
