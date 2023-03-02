@@ -8,7 +8,6 @@ open Expecto
 open Prelude
 open Prelude.Tablecloth
 open Tablecloth
-open LibBackend.Db
 
 open TestUtils.TestUtils
 

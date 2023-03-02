@@ -74,15 +74,6 @@ module WorkerStates =
   type T = Map<string, State>
 
 
-/// Sets all 'new' events to 'scheduled', bypassing actual scheduling logic
-///
-/// Meant only for testing, so the queue-scheduler process doesn't have to be involved
-let testingScheduleAll () : Task<unit> =
-  Sql.query
-    "UPDATE events SET status = 'scheduled'
-      WHERE status = 'new' AND delay_until <= CURRENT_TIMESTAMP"
-  |> Sql.executeStatementAsync
-
 let rowToSchedulingRule (read : RowReader) : SchedulingRule.T =
   let ruleType = read.string "rule_type"
   { id = read.int "id"
@@ -180,18 +171,6 @@ let addSchedulingRule
          ON CONFLICT DO NOTHING"
       |> Sql.parameters [ "ruleType", Sql.string ruleType
                           "canvasID", Sql.uuid canvasID
-                          "workerName", Sql.string workerName ]
-      |> Sql.executeStatementAsync
-
-    do!
-      Sql.query
-        "UPDATE events
-            SET status = 'new'
-            WHERE space = 'WORKER'
-              AND status = 'scheduled'
-              AND canvas_id = @canvasID
-              AND name = @workerName"
-      |> Sql.parameters [ "canvasID", Sql.uuid canvasID
                           "workerName", Sql.string workerName ]
       |> Sql.executeStatementAsync
   }

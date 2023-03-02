@@ -40,21 +40,7 @@ let dbStats (c : Canvas.T) (tlids : tlid list) : Task<DBStats> =
   |> Task.map Map.ofList
 
 
-let workerV1Stats (canvasID : CanvasID) (tlid : tlid) : Task<int> =
-  Sql.query
-    "SELECT COUNT(1) AS num
-     FROM events E
-     INNER JOIN toplevel_oplists TL
-        ON TL.canvas_id = E.canvas_id
-       AND TL.module = E.space
-       AND TL.name = E.name
-     WHERE TL.tlid = @tlid
-       AND TL.canvas_id = @canvasID
-       AND E.status IN ('new', 'scheduled')"
-  |> Sql.parameters [ "tlid", Sql.tlid tlid; "canvasID", Sql.uuid canvasID ]
-  |> Sql.executeRowAsync (fun read -> read.int "num")
-
-let workerV2Stats (canvasID : CanvasID) (tlid : tlid) : Task<int> =
+let workerStats (canvasID : CanvasID) (tlid : tlid) : Task<int> =
   Sql.query
     "SELECT COUNT(1) AS num
      FROM events_v2 E
@@ -66,10 +52,3 @@ let workerV2Stats (canvasID : CanvasID) (tlid : tlid) : Task<int> =
        AND TL.canvas_id = @canvasID"
   |> Sql.parameters [ "tlid", Sql.tlid tlid; "canvasID", Sql.uuid canvasID ]
   |> Sql.executeRowAsync (fun read -> read.int "num")
-
-let workerStats (canvasID : CanvasID) (tlid : tlid) : Task<int> =
-  task {
-    let! v1Stats = workerV1Stats canvasID tlid
-    let! v2Stats = workerV2Stats canvasID tlid
-    return v1Stats + v2Stats
-  }

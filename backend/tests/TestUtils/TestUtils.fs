@@ -42,11 +42,6 @@ let clearCanvasData (owner : UserID) (name : CanvasName.T) : Task<unit> =
       |> Sql.parameters [ "name", Sql.string (string name) ]
       |> Sql.executeStatementAsync
 
-    let events =
-      Sql.query "DELETE FROM events where canvas_id = @id::uuid"
-      |> Sql.parameters [ "id", Sql.uuid canvasID ]
-      |> Sql.executeStatementAsync
-
     let eventsV2 =
       Sql.query "DELETE FROM events_v2 where canvas_id = @id::uuid"
       |> Sql.parameters [ "id", Sql.uuid canvasID ]
@@ -100,7 +95,6 @@ let clearCanvasData (owner : UserID) (name : CanvasName.T) : Task<unit> =
     let! (_ : List<unit>) =
       Task.flatten [ cronRecords
                      customDomains
-                     events
                      eventsV2
                      functionArguments
                      functionResultsV3

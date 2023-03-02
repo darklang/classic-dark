@@ -18,7 +18,7 @@ CANVASES=$(fetch_sql "SELECT id FROM canvases WHERE substring(name, 0, 6)
 SCRIPT=""
 for cid in $CANVASES; do
   SCRIPT+="DELETE FROM scheduling_rules WHERE canvas_id = '$cid';";
-  SCRIPT+="DELETE FROM events WHERE canvas_id = '$cid';";
+  SCRIPT+="DELETE FROM events_v2 WHERE canvas_id = '$cid';";
   SCRIPT+="DELETE FROM function_results_v3 WHERE canvas_id = '$cid';";
   SCRIPT+="DELETE FROM traces_v0 WHERE canvas_id = '$cid';";
   SCRIPT+="DELETE FROM stored_events_v2 WHERE canvas_id = '$cid';";
