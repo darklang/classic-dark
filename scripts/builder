@@ -135,7 +135,7 @@ docker run \
   --platform linux/amd64 \
   --dns 8.8.8.8 \
   --dns 8.8.4.4 \
-  --name dark-stable-builder\
+  --name dark-stable-builder \
   --hostname dark-stable-dev \
   --env-file "$ENV_FILE" \
   --env HOST_PWD="$PWD" \
