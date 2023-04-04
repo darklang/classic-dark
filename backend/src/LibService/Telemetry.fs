@@ -289,47 +289,51 @@ let configureAspNetCore
   options.Enrich <- enrich
   options.RecordException <- true
 
+#nowarn "9"
+
 /// A sampler is used to reduce the number of events, to not overwhelm the results.
 /// In our case, we want to control costs too - we only have 1.5B honeycomb events
 /// per month, and it's easy to use them very quickly in a loop
-type HttpSampler() =
+type Sampler(serviceName : string) =
   inherit OpenTelemetry.Trace.Sampler()
 
   let keep = SamplingResult(SamplingDecision.RecordAndSample)
-  let _drop = SamplingResult(SamplingDecision.Drop)
+  let drop = SamplingResult(SamplingDecision.Drop)
 
-  let getInt (name : string) (map : Map<string, obj>) : Option<int> =
-    try
-      match Map.get name map with
-      | Some result ->
-        if typeof<int> = result.GetType() then Some(result :?> int) else None
-      | None -> None
-    with
-    | _ -> None
+  // from https://github.com/open-telemetry/opentelemetry-dotnet/blob/b2fb873fcd9ceca2552b152a60bf192e2ea12b99/src/OpenTelemetry/Trace/TraceIdRatioBasedSampler.cs#LL76
+  let getLowerLong (bytes : System.ReadOnlySpan<byte>) : int64 =
+    let mutable result : int64 = 0L
+    for i = 0 to 7 do
+      result <- (result <<< 8)
+      result <- result ||| int64 (bytes.[i] &&& 0xffuy)
+    System.Math.Abs result
 
-  let getFloat (name : string) (map : Map<string, obj>) : Option<float> =
-    try
-      match Map.get name map with
-      | Some result ->
-        if typeof<float> = result.GetType() then Some(result :?> float) else None
-      | None -> None
-    with
-    | _ -> None
 
-  let getString (name : string) (map : Map<string, obj>) : Option<string> =
-    try
-      match Map.get name map with
-      | Some result ->
-        if typeof<string> = result.GetType() then Some(result :?> string) else None
-      | None -> None
-    with
-    | _ -> None
+  override this.ShouldSample(ps : SamplingParameters inref) : SamplingResult =
+    // Sampling means that we lose lot of precision and might miss something. By
+    // adding a feature flag, we can dynamically turn up precision when we need it
+    // (eg if we can't find something or there's an outage). Ideally, we'd keep error
+    // traces all the time, but that's not something that's possible with
+    // OpenTelemetry right now.
 
-  override this.ShouldSample(_p : SamplingParameters inref) : SamplingResult =
-    // This turned out to be useless for the initial need (trimming short DB queries)
-    keep
+    // Note we tweak sampling by service, so we can have 100% of one service and 10%
+    // of another
+    let percentage = LaunchDarkly.traceSamplePercentage serviceName
+    if percentage >= 100 then
+      keep
+    else
+      // Deterministic sampler, will produce the same result for every span in a trace
+      // from https://github.com/open-telemetry/opentelemetry-dotnet/blob/b2fb873fcd9ceca2552b152a60bf192e2ea12b99/src/OpenTelemetry/Trace/TraceIdRatioBasedSampler.cs#LL76
+      let ptr =
+        NativeInterop.NativePtr.stackalloc<byte> 16
+        |> NativeInterop.NativePtr.toVoidPtr
+      let traceIdBytes = System.Span<byte>(ptr, 16)
+      ps.TraceId.CopyTo traceIdBytes
+      if getLowerLong (System.Span.op_Implicit traceIdBytes) < percentage then
+        keep
+      else
+        drop
 
-let sampler = HttpSampler()
 
 type TraceDBQueries =
   | TraceDBQueries
@@ -372,7 +376,7 @@ let addTelemetry
        | TraceDBQueries -> b.AddNpgsql()
        | DontTraceDBQueries -> b
   |> fun b -> b.AddSource("Dark")
-  |> fun b -> b.SetSampler(sampler)
+  |> fun b -> b.SetSampler(Sampler(serviceName))
 
 
 module Console =
@@ -382,7 +386,7 @@ module Console =
     let tp =
       Sdk.CreateTracerProviderBuilder()
       |> addTelemetry serviceName traceDBQueries
-      |> fun tp -> tp.SetSampler(AlwaysOnSampler())
+      |> fun tp -> tp.SetSampler(Sampler(serviceName))
       |> fun tp -> tp.Build()
     tracerProvider <- tp
 
