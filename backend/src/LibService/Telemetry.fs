@@ -292,7 +292,7 @@ let configureAspNetCore
 /// A sampler is used to reduce the number of events, to not overwhelm the results.
 /// In our case, we want to control costs too - we only have 1.5B honeycomb events
 /// per month, and it's easy to use them very quickly in a loop
-type DarkSampler() =
+type HttpSampler() =
   inherit OpenTelemetry.Trace.Sampler()
 
   let keep = SamplingResult(SamplingDecision.RecordAndSample)
@@ -329,7 +329,7 @@ type DarkSampler() =
     // This turned out to be useless for the initial need (trimming short DB queries)
     keep
 
-let sampler = DarkSampler()
+let sampler = HttpSampler()
 
 type TraceDBQueries =
   | TraceDBQueries
@@ -382,6 +382,7 @@ module Console =
     let tp =
       Sdk.CreateTracerProviderBuilder()
       |> addTelemetry serviceName traceDBQueries
+      |> fun tp -> tp.SetSampler(AlwaysOnSampler())
       |> fun tp -> tp.Build()
     tracerProvider <- tp
 
