@@ -16,7 +16,7 @@ watchers:
     processors:
       - sample:
           type: static
-          rate: 0.2 # 1/10 sample rate
+          rate: 500 # 1 in 500
 
   ## Editor
   - labelSelector: "app=editor-app"
