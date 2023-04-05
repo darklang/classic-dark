@@ -2,15 +2,6 @@ honeycomb:
   existingSecret: honeycomb-account-credentials
   apiHost: https://api.honeycomb.io/
 
-metrics:
-  clusterName: darkcluster1
-  dataset: kubernetes-metrics
-  enabled: true
-  metricGroups:
-    - node
-    - pod
-    - container
-
 watchers:
 
   # -------------
@@ -25,7 +16,7 @@ watchers:
     processors:
       - sample:
           type: static
-          rate: 10 # 1/10 sample rate
+          rate: 500 # 1 in 500
 
   ## Editor
   - labelSelector: "app=editor-app"
