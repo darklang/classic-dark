@@ -312,10 +312,10 @@ type Sampler(serviceName : string) =
     // of another
     let percentage = LaunchDarkly.telemetrySamplePercentage serviceName
     if false && percentage >= 100.0 then
-       keep
+      keep
     else
       let scaled = int ((percentage / 100.0) * float System.Int32.MaxValue)
-       // Deterministic sampler, will produce the same result for every span in a trace
+      // Deterministic sampler, will produce the same result for every span in a trace
       // Originally based on https://github.com/open-telemetry/opentelemetry-dotnet/blob/b2fb873fcd9ceca2552b152a60bf192e2ea12b99/src/OpenTelemetry/Trace/TraceIdRatioBasedSampler.cs#LL76
       let traceIDAsInt = ps.TraceId.GetHashCode() |> System.Math.Abs
       if traceIDAsInt < scaled then keep else drop
