@@ -13,9 +13,9 @@
     <Compile Include="Exception.fs" />
     <Compile Include="ConfigDsl.fs" />
     <Compile Include="Config.fs" />
+    <Compile Include="LaunchDarkly.fs" />
     <Compile Include="Telemetry.fs" />
     <Compile Include="Logging.fs" />
-    <Compile Include="LaunchDarkly.fs" />
     <Compile Include="Rollbar.fs" />
     <Compile Include="FireAndForget.fs" />
     <Compile Include="DBConnection.fs" />
