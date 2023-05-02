@@ -20,6 +20,7 @@ module Internal =
     lazy
       (match Config.launchDarklyApiKey with
        | Some key ->
+         print "Configuring LD"
          let config =
            Configuration
              .Builder(key)
@@ -221,7 +222,9 @@ module Internal =
     (testDefault : float)
     : string -> float =
     floatSetTestDefault name testDefault
-    fun serviceName -> floatVar name $"service-{serviceName}" default_
+    fun serviceName ->
+      print $"calculating {serviceName} for {name}"
+      floatVar name $"service-{serviceName}" default_
 
   let serviceString
     (name : string)
@@ -255,6 +258,7 @@ let traceSamplingRule =
 // --------------
 // Whether to record traces
 let telemetrySamplePercentage =
+  print "making telemetrysample percentage"
   Internal.serviceFloat "telemetry-sample-percentage" 100.0 100.0
 
 

@@ -310,15 +310,25 @@ type Sampler(serviceName : string) =
 
     // Note we tweak sampling by service, so we can have 100% of one service and 10%
     // of another
+    print $"Calling shouldSample"
     let percentage = LaunchDarkly.telemetrySamplePercentage serviceName
+    print $"Called shouldSample: {percentage}"
     if percentage >= 100.0 then
+      print "keeping0"
       keep
     else
       let scaled = int ((percentage / 100.0) * float System.Int32.MaxValue)
+      print $"scaled: {scaled}"
       // Deterministic sampler, will produce the same result for every span in a trace
       // Originally based on https://github.com/open-telemetry/opentelemetry-dotnet/blob/b2fb873fcd9ceca2552b152a60bf192e2ea12b99/src/OpenTelemetry/Trace/TraceIdRatioBasedSampler.cs#LL76
       let traceIDAsInt = ps.TraceId.GetHashCode() |> System.Math.Abs
-      if traceIDAsInt < scaled then keep else drop
+      print $"traceIDAsInt: {traceIDAsInt}"
+      if traceIDAsInt < scaled then
+        print "keeping"
+        keep
+      else
+        print "droping"
+        drop
 
 
 type TraceDBQueries =
@@ -344,6 +354,7 @@ let addTelemetry
        List.fold
          b
          (fun b exporter ->
+           print $"Adding exporter: {exporter}"
            match exporter with
            | Config.Honeycomb -> b.AddHoneycomb(honeycombOptions)
            | Config.Console -> b.AddConsoleExporter())

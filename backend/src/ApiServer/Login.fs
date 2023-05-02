@@ -84,6 +84,7 @@ let loginUiTemplate : string = LibBackend.File.readfile Config.Templates "login.
 /// API endpoint that returns the HTML login page
 let loginPage (ctx : HttpContext) : Task =
   task {
+    print "loginPage"
     // CLEANUP move these into config urls
     if Config.useLoginDarklangComForLogin then
       ctx.Response.Redirect("https://login.darklang.com", false)
