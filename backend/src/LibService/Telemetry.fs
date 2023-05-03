@@ -300,6 +300,9 @@ type Sampler(serviceName : string) =
   let keep = SamplingResult(SamplingDecision.RecordAndSample)
   let drop = SamplingResult(SamplingDecision.Drop)
 
+  let isApiServer = serviceName = "ApiServer"
+  let print str = if isApiServer then print str else ()
+
 
   override this.ShouldSample(ps : SamplingParameters inref) : SamplingResult =
     // Sampling means that we lose lot of precision and might miss something. By
