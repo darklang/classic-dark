@@ -352,7 +352,6 @@ let addTelemetry
   (builder : TracerProviderBuilder)
   : TracerProviderBuilder =
   builder
-  |> fun b -> b.SetSampler(Sampler(serviceName))
   |> fun b ->
        List.fold
          b
@@ -364,6 +363,7 @@ let addTelemetry
          Config.telemetryExporters
   |> fun b ->
        b.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
+  |> fun b -> b.SetSampler(Sampler(serviceName))
   |> fun b ->
        b.AddHttpClientInstrumentation (fun options ->
          options.SetHttpFlavor <- true // Record HTTP version
