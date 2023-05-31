@@ -297,7 +297,11 @@ let configureAspNetCore
 type Sampler(serviceName : string) =
   inherit OpenTelemetry.Trace.Sampler()
 
-  let keep = SamplingResult(SamplingDecision.RecordAndSample)
+  let keep =
+    SamplingResult(
+      SamplingDecision.RecordAndSample,
+      [ System.Collections.Generic.KeyValuePair("SampleRate", 1) ]
+    )
   let drop = SamplingResult(SamplingDecision.Drop)
 
 
@@ -324,11 +328,18 @@ type Sampler(serviceName : string) =
       let traceIDAsInt = ps.TraceId.GetHashCode() |> System.Math.Abs
       print $"traceID: {ps.TraceId}"
       print $"traceIDAsInt: {traceIDAsInt}"
+
+      // Honeycomb uses a funny number here for sample rate. They want us to provide
+      // `5` for a 20% sample rate (as we are sampling 1/5 of traces). This is 100/percentage.
+      let sampleRate = int (100.0 / percentage)
       if traceIDAsInt < scaled then
         print "keeping"
-        keep
+        SamplingResult(
+          SamplingDecision.RecordAndSample,
+          [ System.Collections.Generic.KeyValuePair("SampleRate", sampleRate) ]
+        )
       else
-        print "droping"
+        print "dropping"
         drop
 
 
