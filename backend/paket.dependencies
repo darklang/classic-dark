@@ -43,10 +43,10 @@ nuget LaunchDarkly.ServerSdk = 6.3.2
 // Tracing
 nuget Honeycomb.OpenTelemetry = 0.18.0-beta
 nuget Npgsql.OpenTelemetry = 6.0.4
-nuget System.Diagnostics.DiagnosticSource = 6.0.0
-nuget OpenTelemetry = 1.2.0-rc2
-nuget OpenTelemetry.Exporter.OpenTelemetryProtocol = 1.2.0-rc2
-nuget OpenTelemetry.Exporter.Console = 1.2.0-rc2
+nuget System.Diagnostics.DiagnosticSource = 7.0.0
+nuget OpenTelemetry = 1.4.0
+nuget OpenTelemetry.Exporter.OpenTelemetryProtocol = 1.4.0
+nuget OpenTelemetry.Exporter.Console = 1.4.0
 nuget OpenTelemetry.Instrumentation.AspNetCore = 1.0.0-rc9
 nuget OpenTelemetry.Extensions.Hosting = 1.0.0-rc9
 nuget OpenTelemetry.Instrumentation.Http = 1.0.0-rc9
