@@ -222,9 +222,7 @@ module Internal =
     (testDefault : float)
     : string -> float =
     floatSetTestDefault name testDefault
-    fun serviceName ->
-      print $"calculating {serviceName} for {name}"
-      floatVar name $"service-{serviceName}" default_
+    fun serviceName -> floatVar name $"service-{serviceName}" default_
 
   let serviceString
     (name : string)
