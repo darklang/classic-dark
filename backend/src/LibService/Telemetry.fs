@@ -247,7 +247,7 @@ let honeycombOptions : HoneycombOptions =
   options.ApiKey <- Config.honeycombApiKey
   options.Dataset <- Config.honeycombDataset
   options.Endpoint <- Config.honeycombEndpoint
-  // options.AddDeterministicSampler <- false
+  options.AddDeterministicSampler <- false
   options
 
 let configureAspNetCore
