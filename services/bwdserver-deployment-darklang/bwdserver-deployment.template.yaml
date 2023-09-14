@@ -75,8 +75,8 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "3000Mi"
-              cpu: "2"
+              memory: "1500Mi"
+              cpu: "1"
             limits:
               memory: "6000Mi"
 
@@ -226,8 +226,8 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "500Mi"
-              cpu: "125m"
+              memory: "20Mi"
+              cpu: "10m"
             limits:
               memory: "500Mi"
 
