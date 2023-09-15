@@ -70,10 +70,10 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "8000Mi"
-              cpu: "3"
+              memory: "4000Mi"
+              cpu: "1.5"
             limits:
-              memory: "16000Mi"
+              memory: "8000Mi"
 
           # ---------------------
           # Lifecycles probes
@@ -221,8 +221,8 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "500Mi"
-              cpu: "125m"
+              memory: "20Mi"
+              cpu: "10m"
             limits:
               memory: "500Mi"
 
