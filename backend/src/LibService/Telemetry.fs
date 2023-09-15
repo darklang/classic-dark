@@ -247,6 +247,7 @@ let honeycombOptions : HoneycombOptions =
   options.ApiKey <- Config.honeycombApiKey
   options.Dataset <- Config.honeycombDataset
   options.Endpoint <- Config.honeycombEndpoint
+  options.AddDeterministicSampler <- false
   options
 
 let configureAspNetCore
@@ -297,8 +298,13 @@ let configureAspNetCore
 type Sampler(serviceName : string) =
   inherit OpenTelemetry.Trace.Sampler()
 
-  let keep = SamplingResult(SamplingDecision.RecordAndSample)
+  let keep =
+    SamplingResult(
+      SamplingDecision.RecordAndSample,
+      [ System.Collections.Generic.KeyValuePair("SampleRate", 1 :> obj) ]
+    )
   let drop = SamplingResult(SamplingDecision.Drop)
+
 
 
   override this.ShouldSample(ps : SamplingParameters inref) : SamplingResult =
@@ -310,25 +316,24 @@ type Sampler(serviceName : string) =
 
     // Note we tweak sampling by service, so we can have 100% of one service and 10%
     // of another
-    print $"Calling shouldSample {serviceName}"
     let percentage = LaunchDarkly.telemetrySamplePercentage serviceName
-    print $"Called shouldSample: {percentage}"
     if percentage >= 100.0 then
-      print "keeping100"
       keep
     else
       let scaled = int ((percentage / 100.0) * float System.Int32.MaxValue)
-      print $"scaled: {scaled}"
       // Deterministic sampler, will produce the same result for every span in a trace
       // Originally based on https://github.com/open-telemetry/opentelemetry-dotnet/blob/b2fb873fcd9ceca2552b152a60bf192e2ea12b99/src/OpenTelemetry/Trace/TraceIdRatioBasedSampler.cs#LL76
       let traceIDAsInt = ps.TraceId.GetHashCode() |> System.Math.Abs
-      print $"traceID: {ps.TraceId}"
-      print $"traceIDAsInt: {traceIDAsInt}"
+
+      // Honeycomb uses a funny number here for sample rate. They want us to provide
+      // `5` for a 20% sample rate (as we are sampling 1/5 of traces). This is 100/percentage.
+      let sampleRate = int (100.0 / percentage)
       if traceIDAsInt < scaled then
-        print "keeping"
-        keep
+        SamplingResult(
+          SamplingDecision.RecordAndSample,
+          [ System.Collections.Generic.KeyValuePair("SampleRate", sampleRate :> obj) ]
+        )
       else
-        print "droping"
         drop
 
 
