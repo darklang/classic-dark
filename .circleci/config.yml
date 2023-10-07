@@ -468,7 +468,7 @@ workflows:
             - gcp context
           filters:
             branches:
-              ignore: /^(pull|dependabot)\/.*$/
+              only: main
       - validate-honeycomb-config
       - build-client
       - build-backend
@@ -551,5 +551,5 @@ workflows:
             - gcp-containers-test
             # - integration-tests
             - static-checks
-            - predeployment-checks
+            # - predeployment-checks
             - validate-honeycomb-config
