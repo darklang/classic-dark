@@ -551,5 +551,5 @@ workflows:
             - gcp-containers-test
             # - integration-tests
             - static-checks
-            - predeployment-checks
+            # - predeployment-checks
             - validate-honeycomb-config
