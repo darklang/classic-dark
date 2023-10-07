@@ -1,15 +1,15 @@
 # Dark
 
-This is the main repo for [Dark](https://darklang.com), a combined language, editor,
+This is the main repo for [Darklang-classic](https://darklang.com), a combined language, editor,
 and infrastructure to make it easy to build backends.
 
 This repo is intended to help Dark users solve their needs by fixing bugs, expanding features, or otherwise contributing. Dark is
-[source available, not open source](https://github.com/darklang/dark/blob/main/LICENSE.md).
+[source available, not open source](https://github.com/classic-darklang/dark/blob/main/LICENSE.md).
+
+This is not under active development, see instead the [dark repo](https://github.com/darklang/dark).
 
 See also:
 
-- [Project Tracking](https://github.com/orgs/darklang/projects/5) - what we're actually
-  working on right
 - [Darklang Community Discord](https://darklang.com/discord-invite)
 - [Roadmap](https://github.com/darklang/dark/issues/3284)
 - [Contributor guide](https://docs.darklang.com/contributing/getting-started)
