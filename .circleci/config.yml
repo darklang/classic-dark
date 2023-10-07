@@ -468,7 +468,7 @@ workflows:
             - gcp context
           filters:
             branches:
-              ignore: /^(pull|dependabot)\/.*$/
+              only: main
       - validate-honeycomb-config
       - build-client
       - build-backend
