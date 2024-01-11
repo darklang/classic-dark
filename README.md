@@ -8,6 +8,8 @@ This repo is intended to help Dark users solve their needs by fixing bugs, expan
 
 This is not under active development, see instead the [dark repo](https://github.com/darklang/dark).
 
+[![Ceasefire Now](https://badge.techforpalestine.org/ceasefire-now)](https://techforpalestine.org/learn-more)
+
 See also:
 
 - [Darklang Community Discord](https://darklang.com/discord-invite)
