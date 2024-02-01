@@ -58,6 +58,28 @@ let fns : List<BuiltInFn> =
         | _ -> incorrectArgs ())
       sqlSpec = NotQueryable
       previewable = Impure
+      deprecated = ReplacedBy(fn "DB" "set" 2) }
+
+
+    { name = fn "DB" "set" 2
+      parameters = [ ocamlCompatibleValParam; keyParam; tableParam ]
+      returnType = TResult(ocamlTObj, TStr)
+      description =
+        "Upsert <param val> into <param table>, accessible by <param key>"
+      fn =
+        (function
+        | state, [ DObj value; DStr key; DDB dbname ] ->
+          uply {
+            try
+              let db = state.program.dbs[dbname]
+              let! _id = UserDB.set state true db key value
+              return Ok(DObj value) |> DResult
+            with
+            | _e -> return Ok DNull |> DResult
+          }
+        | _ -> incorrectArgs ())
+      sqlSpec = NotQueryable
+      previewable = Impure
       deprecated = NotDeprecated }
 
 
