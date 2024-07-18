@@ -19,9 +19,9 @@
 # change.
 
 
-FROM ubuntu:22.04 as dark-stable-base
+FROM ubuntu:22.04 AS dark-classic-base
 
-ENV FORCE_BUILD 3
+ENV FORCE_BUILD=9
 
 # Creates variables to allow builds to work on both amd64 and arm64
 ARG TARGETARCH
@@ -175,9 +175,9 @@ RUN mkdir -p bin
 # Locales
 ############################
 RUN sudo locale-gen "en_US.UTF-8"
-ENV LANGUAGE en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 ############################
 # Frontend
@@ -367,7 +367,7 @@ RUN sudo pip3 install -U --no-cache-dir -U crcmod \
 # Pip packages
 ############################
 RUN sudo pip3 install --no-cache-dir yq yamllint watchfiles yapf==0.32.0
-ENV PATH "$PATH:/home/dark/.local/bin"
+ENV PATH="$PATH:/home/dark/.local/bin"
 
 ####################################
 # CircleCI
@@ -472,7 +472,7 @@ RUN sudo dotnet workload install wasm-tools
 
 # formatting
 RUN dotnet tool install fantomas-tool --version 4.7.9 -g
-ENV PATH "$PATH:/home/dark/bin:/home/dark/.dotnet/tools"
+ENV PATH="$PATH:/home/dark/bin:/home/dark/.dotnet/tools"
 
 #############
 # tunnel user
