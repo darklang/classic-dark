@@ -136,8 +136,14 @@ let createStandardTracer (canvasID : CanvasID) (traceID : AT.TraceID.T) : T =
   let results = { TraceResults.empty () with tlids = touchedTLIDs }
   { enabled = true
     results = results
+
     executionTracing =
       { Exe.noTracing RT.Real with
+          storeFnArguments =
+            (fun tlid args ->
+              ResizeArray.append
+                (tlid, args, NodaTime.Instant.now ())
+                results.functionArguments)
           storeFnResult =
             (fun (tlid, name, id) args result ->
               let hash =
@@ -147,12 +153,16 @@ let createStandardTracer (canvasID : CanvasID) (traceID : AT.TraceID.T) : T =
                 (tlid, name, id, hash)
                 (result, NodaTime.Instant.now ())
                 results.functionResults)
-          storeFnArguments =
-            (fun tlid args ->
-              ResizeArray.append
-                (tlid, args, NodaTime.Instant.now ())
-                results.functionArguments)
           traceTLID = traceTLIDFn }
+
+    storeTraceInput =
+      (fun desc _ input ->
+        LibService.FireAndForget.fireAndForgetTask "traceResultHook" (fun () ->
+          task {
+            let! (_timestamp : NodaTime.Instant) =
+              TraceInputs.storeEvent canvasID traceID desc input
+            return ()
+          }))
     storeTraceResults =
       (fun () ->
         LibService.FireAndForget.fireAndForgetTask "traceResultHook" (fun () ->
@@ -164,14 +174,6 @@ let createStandardTracer (canvasID : CanvasID) (traceID : AT.TraceID.T) : T =
                 results.functionArguments
             do!
               TraceFunctionResults.storeMany canvasID traceID results.functionResults
-          }))
-    storeTraceInput =
-      (fun desc _ input ->
-        LibService.FireAndForget.fireAndForgetTask "traceResultHook" (fun () ->
-          task {
-            let! (_timestamp : NodaTime.Instant) =
-              TraceInputs.storeEvent canvasID traceID desc input
-            return ()
           })) }
 
 let createCloudStorageTracer

@@ -21,30 +21,6 @@ module DvalReprInternalDeprecated = LibExecution.DvalReprInternalDeprecated
 
 type FunctionArgumentStore = tlid * RT.DvalMap * NodaTime.Instant
 
-let store
-  (canvasID : CanvasID)
-  (traceID : AT.TraceID.T)
-  (tlid : tlid)
-  (args : RT.DvalMap)
-  : Task<unit> =
-  if canvasID = TraceInputs.throttled then
-    Task.FromResult()
-  else
-    Sql.query
-      "INSERT INTO function_arguments
-      (canvas_id, trace_id, tlid, timestamp, arguments_json)
-      VALUES (@canvasID, @traceID, @tlid, CURRENT_TIMESTAMP, @args)"
-    |> Sql.parameters [ "canvasID", Sql.uuid canvasID
-                        "traceID", Sql.traceID traceID
-                        "tlid", Sql.tlid tlid
-                        ("args",
-                         Sql.string (
-                           DvalReprInternalDeprecated.toInternalRoundtrippableV0 (
-                             RT.DObj args
-                           )
-                         )) ]
-    |> Sql.executeStatementAsync
-
 let storeMany
   (canvasID : CanvasID)
   (traceID : AT.TraceID.T)
