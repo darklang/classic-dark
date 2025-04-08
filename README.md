@@ -1,4 +1,4 @@
-# Dark
+# Darklang (Classic)
 
 This is the main repo for [Darklang-classic](https://darklang.com), a combined language, editor,
 and infrastructure to make it easy to build backends.
