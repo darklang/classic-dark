@@ -10,7 +10,7 @@ version: 2.1
 executors:
   simple-executor:
     docker:
-      - image: cimg/base:2022.10
+      - image: cimg/base:2025.04
   in-container:
     working_directory: ~/app
     environment:
