@@ -10,7 +10,7 @@ version: 2.1
 executors:
   simple-executor:
     docker:
-      - image: cimg/base:2025.04
+      - image: cimg/base:current
   in-container:
     working_directory: ~/app
     environment:
@@ -139,7 +139,7 @@ commands:
   ##########################
   prep-container-creation:
     steps:
-      - setup_remote_docker: { docker_layer_caching: true, version: 20.10.14 }
+      - setup_remote_docker: { docker_layer_caching: true }
 
       # Save the docker env: type .docker-env when sshing in, then you can
       # use ./scripts/run-in-docker
