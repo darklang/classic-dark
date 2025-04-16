@@ -15,6 +15,7 @@ module DvalReprInternalDeprecated = LibExecution.DvalReprInternalDeprecated
 module DvalReprDeveloper = LibExecution.DvalReprDeveloper
 module Errors = LibExecution.Errors
 module Telemetry = LibService.Telemetry
+module PT = LibExecution.ProgramTypes
 
 open LibBackend
 module SchedulingRules = LibBackend.QueueSchedulingRules
@@ -1059,6 +1060,49 @@ human-readable data."
                 return DBool true
               else
                 return DBool false
+            }
+          | _ -> incorrectArgs ())
+      sqlSpec = NotQueryable
+      previewable = Impure
+      deprecated = NotDeprecated }
+
+
+    { name = fn "DarkInternal" "deleteToplevel" 0
+      parameters = [ Param.make "canvasID" TUuid ""; Param.make "tlid" TInt "" ]
+      returnType = TBool
+      description = "Delete a toplevel."
+      fn =
+        internalFn (function
+          | _, [ DUuid canvasID; DInt tlid ] ->
+            uply {
+              let! meta = Canvas.getMetaFromID canvasID
+              let tlid = uint64 tlid
+
+              let newOps = [ PT.TLSavepoint tlid; PT.DeleteTL tlid ]
+
+              let! oldOps =
+                Serialize.loadOplists Serialize.LiveToplevels canvasID [ tlid ]
+              let oldOps = oldOps |> List.map snd |> List.concat
+
+              let c = Canvas.fromOplist meta oldOps newOps
+
+              do!
+                (oldOps @ newOps)
+                |> Op.oplist2TLIDOplists
+                |> List.choose (fun (tlid, oplists) ->
+                  let tlPair =
+                    match Map.tryFind tlid (Canvas.toplevels c) with
+                    | Some tl -> Some(tl, Canvas.NotDeleted)
+                    | None ->
+                      match Map.tryFind tlid (Canvas.deletedToplevels c) with
+                      | Some tl -> Some(tl, Canvas.Deleted)
+                      | None -> None
+                  Option.map
+                    (fun (tl, deleted) -> (tlid, oplists, tl, deleted))
+                    tlPair)
+                |> Canvas.saveTLIDs meta
+
+              return DBool true
             }
           | _ -> incorrectArgs ())
       sqlSpec = NotQueryable
