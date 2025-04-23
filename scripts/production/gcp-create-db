@@ -56,9 +56,9 @@ if [ ! -v DARK_CLUSTER_CLOUDSQL_PASS ]; then
 fi
 
 gcloud sql instances create "${DARK_CLUSTER_CLOUDSQL_INSTANCE_NAME}" \
-  --database-version=POSTGRES_9_6 \
-  --cpu=8 \
-  --memory=30GB \
+  --database-version=POSTGRES_13 \
+  --cpu=12 \
+  --memory=60GB \
   --region="${DARK_CLUSTER_REGION}" \
   --availability-type=REGIONAL \
   --storage-auto-increase \

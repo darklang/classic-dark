@@ -67,7 +67,6 @@ RUN curl -sSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN curl -sSL https://nginx.org/keys/nginx_signing.key | apt-key add -
 RUN curl -sSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 
-# We want postgres 9.6, but it is not in later ubuntus
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
 
 RUN echo "deb https://nginx.org/packages/ubuntu/ jammy nginx" > /etc/apt/sources.list.d/nginx.list
@@ -107,9 +106,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
       wget \
       sudo \
       locales \
-      postgresql-9.6 \
-      postgresql-client-9.6 \
-      postgresql-contrib-9.6 \
+      postgresql-13 \
+      postgresql-client-13 \
+      postgresql-contrib-13 \
       git-restore-mtime \
       nodejs \
       libgbm1 \
@@ -195,8 +194,8 @@ RUN /etc/init.d/postgresql start && \
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
-RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.6/main/pg_hba.conf
-RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/13/main/pg_hba.conf
+RUN echo "listen_addresses='*'" >> /etc/postgresql/13/main/postgresql.conf
 
 USER dark
 # Add VOLUMEs to allow backup of config, logs and databases
