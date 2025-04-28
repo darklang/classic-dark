@@ -44,26 +44,34 @@ module Internal =
 
   // Internal functions to call LD. Should only be used from within
   let boolSetTestDefault (flagName : string) (default_ : bool) =
-    testData.Update(testData.Flag(flagName).ValueForAllUsers(LdValue.Of default_))
+    testData.Update(testData.Flag(flagName).ValueForAll(LdValue.Of default_))
     |> ignore<Integrations.TestData>
 
   let intSetTestDefault (flagName : string) (default_ : int) =
-    testData.Update(testData.Flag(flagName).ValueForAllUsers(LdValue.Of default_))
+    testData.Update(testData.Flag(flagName).ValueForAll(LdValue.Of default_))
     |> ignore<Integrations.TestData>
 
   let floatSetTestDefault (flagName : string) (default_ : float) =
-    testData.Update(testData.Flag(flagName).ValueForAllUsers(LdValue.Of default_))
+    testData.Update(testData.Flag(flagName).ValueForAll(LdValue.Of default_))
     |> ignore<Integrations.TestData>
 
   let stringSetTestDefault (flagName : string) (default_ : string) =
-    testData.Update(testData.Flag(flagName).ValueForAllUsers(LdValue.Of default_))
+    testData.Update(testData.Flag(flagName).ValueForAll(LdValue.Of default_))
     |> ignore<Integrations.TestData>
 
   let boolVar (flagName : string) (userSignifier : string) (default_ : bool) : bool =
-    client.Force().BoolVariation(flagName, User.WithKey userSignifier, default_)
+    client
+      .Force()
+      .BoolVariation(
+        flagName,
+        Context.FromUser(User.WithKey userSignifier),
+        default_
+      )
 
   let intVar (flagName : string) (userSignifier : string) (default_ : int) : int =
-    client.Force().IntVariation(flagName, User.WithKey userSignifier, default_)
+    client
+      .Force()
+      .IntVariation(flagName, Context.FromUser(User.WithKey userSignifier), default_)
 
   let floatVar
     (flagName : string)
@@ -71,14 +79,26 @@ module Internal =
     (default_ : float)
     : float =
     // Note use of name Double here (C# double is an F# float)
-    client.Force().DoubleVariation(flagName, User.WithKey userSignifier, default_)
+    client
+      .Force()
+      .DoubleVariation(
+        flagName,
+        Context.FromUser(User.WithKey userSignifier),
+        default_
+      )
 
   let stringVar
     (flagName : string)
     (userSignifier : string)
     (default_ : string)
     : string =
-    client.Force().StringVariation(flagName, User.WithKey userSignifier, default_)
+    client
+      .Force()
+      .StringVariation(
+        flagName,
+        Context.FromUser(User.WithKey userSignifier),
+        default_
+      )
 
 
   // -------------
