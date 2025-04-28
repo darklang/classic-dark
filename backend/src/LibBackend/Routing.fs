@@ -28,7 +28,7 @@ let splitUriPath (path : string) : string array =
 
 let routeToPostgresPattern (route : string) : string =
 
-  // https://www.postgresql.org/docs/9.6/functions-matching.html
+  // https://www.postgresql.org/docs/13/functions-matching.html
   route
   |> String.collect (fun str ->
     match str with

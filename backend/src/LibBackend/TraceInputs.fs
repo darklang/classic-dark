@@ -214,7 +214,7 @@ let mungePathForPostgres (module_ : string) (path : string) =
   if String.toLowercase module_ = "http" then
     Routing.routeToPostgresPattern path
   else
-    // https://www.postgresql.org/docs/9.6/functions-matching.html
+    // https://www.postgresql.org/docs/13/functions-matching.html
     path.Replace("%", "\\%").Replace("_", "\\_")
 
 let loadEventIDs
