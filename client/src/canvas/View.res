@@ -745,6 +745,46 @@ let accountView = (m: model): Html.html<msg> => {
   )
 }
 
+let viewShutdownWarning = (hasAcknowledgedShutdownWarning: bool): Html.html<AppTypes.msg> => {
+  let viewErrorMsg =
+    list{Html.p(
+      list{},
+      list{
+        Html.text("We're working on winding down Dark-Classic. Read "),
+        Html.a(
+          list{
+            Attrs.href("https://blog.darklang.com/winding-down-dark-classic"),
+            Attrs.target("_blank"),
+          },
+          list{Html.text("this post")}
+        ),
+        Html.text(" if there are canvases that you'd like to keep active.")
+      }
+    )}
+
+  let viewDismissBtn = list{
+    Html.p(
+      list{
+        Attrs.class("dismissBtn"),
+        EventListeners.eventNoPropagation(
+          "click",
+          ~key="dismiss-error",
+          _ => Msg.AcknowledgeClassicShutdown),
+      },
+      list{Html.text("Dismiss")},
+    ),
+  }
+
+  if hasAcknowledgedShutdownWarning {
+    Vdom.noNode
+  } else{
+    Html.div(
+      list{Attrs.classList(list{("warning-panel", true), ("show", true)})},
+      Belt.List.concat(viewErrorMsg, viewDismissBtn),
+    )
+  }
+}
+
 let view = (m: model): Html.html<msg> => {
   let eventListeners = /* We don't want propagation because we don't want to double-handle these events and
    * window has its own listeners. */
@@ -763,6 +803,7 @@ let view = (m: model): Html.html<msg> => {
     ViewScaffold.readOnlyMessage(m),
     viewBackToCanvas(m.currentPage, m.tooltipState.fnSpace),
     ViewScaffold.viewError(m.error),
+    viewShutdownWarning(m.hasAcknowledgedShutdownWarning)
   }
 
   let sidebar = ViewSidebar.viewSidebar(m)

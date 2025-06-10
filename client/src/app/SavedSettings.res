@@ -14,6 +14,7 @@ let toModel = (e: AppTypes.SavedSettings.t): AppTypes.model => {
     lastReload: e.lastReload,
     showTopbar: e.showTopbar,
     firstVisitToThisCanvas: e.firstVisitToThisCanvas,
+    hasAcknowledgedShutdownWarning: e.hasAcknowledgedShutdownWarning,
     tooltipState: {
       ...m.tooltipState,
       userTutorial: {step: e.userTutorial, tlid: e.userTutorialTLID},
@@ -32,6 +33,7 @@ let model2editor = (m: AppTypes.model): AppTypes.SavedSettings.t => {
   lastReload: m.lastReload,
   showTopbar: m.showTopbar,
   firstVisitToThisCanvas: m.firstVisitToThisCanvas,
+  hasAcknowledgedShutdownWarning: m.hasAcknowledgedShutdownWarning,
   userTutorial: m.tooltipState.userTutorial.step,
   userTutorialTLID: m.tooltipState.userTutorial.tlid,
   settings: m.settings,

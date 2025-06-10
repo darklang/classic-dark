@@ -69,6 +69,7 @@ async function prepSettings(page: Page, testName: string) {
   let editorState = {
     editorSettings: { showFluidDebugger: true },
     firstVisitToThisCanvas: false,
+    hasAcknowledgedShutdownWarning: true,
   };
 
   let userState = {

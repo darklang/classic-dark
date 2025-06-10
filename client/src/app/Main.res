@@ -2096,6 +2096,17 @@ let update_ = (msg: msg, m: model): modification => {
     NoChange
   | GoToArchitecturalView => Many(list{Deselect, MakeCmd(Url.navigateTo(Architecture))})
   | DismissErrorBar => Model.updateErrorMod(Error.clear)
+  | AcknowledgeClassicShutdown =>
+    ReplaceAllModificationsWithThisOne(
+      "Tooltips-closeTurorial",
+      m => (
+        {
+          ...m,
+          hasAcknowledgedShutdownWarning: true,
+        },
+        Tea.Cmd.none,
+      ),
+    )
   | PauseWorker(workerName) =>
     MakeCmd(API.updateWorkerSchedule(m, {name: workerName, schedule: Paused}))
   | RunWorker(workerName) =>

@@ -530,6 +530,7 @@ module SavedSettings = {
     lastReload: option<Js.Date.t>,
     showTopbar: bool,
     firstVisitToThisCanvas: bool,
+    hasAcknowledgedShutdownWarning: bool,
     userTutorial: option<Tutorial.Step.t>,
     userTutorialTLID: option<TLID.t>,
     settings: Settings.t,
@@ -543,6 +544,7 @@ module SavedSettings = {
     lastReload: None,
     showTopbar: false,
     firstVisitToThisCanvas: true,
+    hasAcknowledgedShutdownWarning: false,
     userTutorial: None,
     userTutorialTLID: None,
     settings: Settings.default,
@@ -559,6 +561,7 @@ module SavedSettings = {
       ("lastReload", nullable(date, se.lastReload)),
       ("showTopbar1", bool(se.showTopbar)),
       ("firstVisitToThisCanvas", bool(se.firstVisitToThisCanvas)),
+      ("hasAcknowledgedShutdownWarning", bool(se.hasAcknowledgedShutdownWarning)),
       ("userTutorial", nullable(Tutorial.Step.encode, se.userTutorial)),
       ("userTutorialTLID", nullable(TLID.encode, se.userTutorialTLID)),
       ("settings", Settings.toSaved(se.settings)),
@@ -596,6 +599,11 @@ module SavedSettings = {
         default.firstVisitToThisCanvas,
         field("firstVisitToThisCanvas", bool),
         j,
+      ),
+      hasAcknowledgedShutdownWarning: withDefault(
+        default.hasAcknowledgedShutdownWarning,
+        field("hasAcknowledgedShutdownWarning", bool),
+        j
       ),
       userTutorial: withDefault(
         default.userTutorial,
@@ -723,6 +731,7 @@ module Msg = {
     | GoToArchitecturalView
     | HideTopbar
     | DismissErrorBar
+    | AcknowledgeClassicShutdown
     | PauseWorker(string)
     | RunWorker(string)
     | UpdateWorkerScheduleCallback(
@@ -808,6 +817,7 @@ module Msg = {
     | GoToArchitecturalView => "GoToArchitecturalView"
     | HideTopbar => "HideTopbar"
     | DismissErrorBar => "DismissErrorBar"
+    | AcknowledgeClassicShutdown => "AcknowledgeClassicShutdown"
     | PauseWorker(_) => "PauseWorker"
     | RunWorker(_) => "RunWorker"
     | UpdateWorkerScheduleCallback(_) => "UpdateWorkerScheduleCallback"
@@ -1107,6 +1117,7 @@ module Model = {
     currentUserFn: FunctionParams.t,
     settings: Settings.t,
     firstVisitToThisCanvas: bool,
+    hasAcknowledgedShutdownWarning: bool,
     // indicates if it is the users first time this canvas
     secrets: list<SecretTypes.t>,
     insertSecretModal: SecretTypes.insertModal,
@@ -1173,6 +1184,7 @@ module Model = {
     tooltipState: Tooltip.default,
     currentUserFn: FunctionParams.default,
     firstVisitToThisCanvas: true,
+    hasAcknowledgedShutdownWarning: false,
     secrets: list{},
     settings: Settings.default,
     insertSecretModal: SecretTypes.defaultInsertModal,
