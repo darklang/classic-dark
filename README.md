@@ -3,10 +3,14 @@
 This is the main repo for [Darklang-classic](https://darklang.com), a combined language, editor,
 and infrastructure to make it easy to build backends.
 
-This repo is intended to help Dark users solve their needs by fixing bugs, expanding features, or otherwise contributing. Dark is
-[source available, not open source](https://github.com/classic-darklang/dark/blob/main/LICENSE.md).
+This repo is intended to help Darklang users solve their needs by fixing bugs,
+expanding features, or otherwise contributing.
+Darklang is [open source](https://blog.darklang.com/TODO) under the Apache License 2.0.
+See our [LICENSE.md](https://github.com/darklang/dark/blob/main/LICENSE.md).
 
-This is not under active development, see instead the [dark repo](https://github.com/darklang/dark).
+This is not under active development, and Darklang, Inc. is currently
+[winding down](TODO-link) the production instance of this service.
+See instead the [dark repo](https://github.com/darklang/dark) for recent work.
 
 [![Ceasefire Now](https://badge.techforpalestine.org/ceasefire-now)](https://techforpalestine.org/learn-more)
 
