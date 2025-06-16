@@ -35,6 +35,15 @@
     animation-name: showErrorPanel;
   }
 }
+.warning-panel {
+  @extend .error-panel;
+  background-color: $yellow;
+
+  a {
+    color: $red;
+    font-weight: 500;
+  }
+}
 
 .message-panel {
   width: 100%;
