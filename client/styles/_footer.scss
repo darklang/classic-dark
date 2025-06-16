@@ -35,9 +35,10 @@
     animation-name: showErrorPanel;
   }
 }
-.warning-panel {
+body .warning-panel {
   @extend .error-panel;
   background-color: $yellow;
+  color: $black1;
 
   a {
     color: $red;
