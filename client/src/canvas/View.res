@@ -750,7 +750,7 @@ let viewShutdownWarning = (hasAcknowledgedShutdownWarning: bool): Html.html<AppT
     list{Html.p(
       list{},
       list{
-        Html.text("We're working on winding down Dark-Classic. Read "),
+        Html.text("We're working on winding down Darklang-Classic. Read "),
         Html.a(
           list{
             Attrs.href("https://blog.darklang.com/winding-down-darklang-classic"),
