@@ -46,6 +46,7 @@ module FireAndForget = LibService.FireAndForget
 module Kubernetes = LibService.Kubernetes
 module Rollbar = LibService.Rollbar
 module Telemetry = LibService.Telemetry
+module LD = LibService.LaunchDarkly
 
 module CTPusher = ClientTypes.Pusher
 
@@ -225,6 +226,18 @@ let canvasNotFoundResponse (ctx : HttpContext) : Task<HttpContext> =
   Telemetry.addTag "http.completion_reason" "canvasNotFound"
   standardResponse ctx "canvas not found" textPlain 404
 
+let canvasNotActiveResponse (ctx : HttpContext) : Task<HttpContext> =
+  // CLEANUP: use errorResponse
+  Telemetry.addTag "http.completion_reason" "canvasNotActive"
+  standardResponse
+    ctx
+    ("Darklang-Classic is winding down: https://blog.darklang.com/winding-down-darklang-classic. "
+     + "If you see this message, your canvas has not been marked to be kept active - "
+     + "please reach out at classic@darklang.com if you'd like to keep your canvas active. "
+     + "If you are not the developer of this canvas, and are a user, please contact the admin of the service you are trying to access.")
+    textPlain
+    410
+
 let internalErrorResponse (ctx : HttpContext) (e : exn) : Task<HttpContext> =
   Telemetry.addTag "http.completion_reason" "internalError"
   Telemetry.addTag "http.internal_exception_msg" e.Message
@@ -331,81 +344,62 @@ let runDarkHandler (ctx : HttpContext) : Task<HttpContext> =
 
     match canvasMeta with
     | Some meta ->
-      ctx.Items[ "canvasName" ] <- meta.name // store for exception tracking
-      ctx.Items[ "canvasOwnerID" ] <- meta.owner // store for exception tracking
+      // We're winding down Darklang-Classic
+      // This snippet short-circuits BwdServer to fail on requests to inactive canvases
+      //   , while brownouts are active.
+      // The hope is that users hitting those endpoints will be informed of the outage
+      //   (and if those folks aren't the devs, they should tell the devs)
+      let! canvasShouldBeKeptActive = Canvas.shouldCanvasBeKeptActive meta.id
+      if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+        return! canvasNotActiveResponse ctx
+      else
+        ctx.Items[ "canvasName" ] <- meta.name // store for exception tracking
+        ctx.Items[ "canvasOwnerID" ] <- meta.owner // store for exception tracking
 
-      let traceID = LibExecution.AnalysisTypes.TraceID.create ()
-      let requestMethod = ctx.Request.Method
-      let requestPath = ctx.Request.Path.Value |> Routing.sanitizeUrlPath
-      let desc = ("HTTP", requestPath, requestMethod)
+        let traceID = LibExecution.AnalysisTypes.TraceID.create ()
+        let requestMethod = ctx.Request.Method
+        let requestPath = ctx.Request.Path.Value |> Routing.sanitizeUrlPath
+        let desc = ("HTTP", requestPath, requestMethod)
 
-      Telemetry.addTags [ "canvas.name", meta.name
-                          "canvas.id", meta.id
-                          "canvas.owner_id", meta.owner
-                          "trace_id", traceID ]
+        Telemetry.addTags [ "canvas.name", meta.name
+                            "canvas.id", meta.id
+                            "canvas.owner_id", meta.owner
+                            "trace_id", traceID ]
 
-      // redirect HEADs to GET. We pass the actual HEAD method to the engine,
-      // and leave it to middleware to say what it wants to do with that
-      let searchMethod = if requestMethod = "HEAD" then "GET" else requestMethod
+        // redirect HEADs to GET. We pass the actual HEAD method to the engine,
+        // and leave it to middleware to say what it wants to do with that
+        let searchMethod = if requestMethod = "HEAD" then "GET" else requestMethod
 
-      // Canvas to process request against, with enough loaded to handle this
-      // request
-      let! canvas = Canvas.loadHttpHandlers meta requestPath searchMethod
+        // Canvas to process request against, with enough loaded to handle this
+        // request
+        let! canvas = Canvas.loadHttpHandlers meta requestPath searchMethod
 
-      let url : string = ctx.Request.GetEncodedUrl() |> canonicalizeURL (isHttps ctx)
+        let url : string =
+          ctx.Request.GetEncodedUrl() |> canonicalizeURL (isHttps ctx)
 
-      // Filter down canvas' handlers to those (hopefully only one) that match
-      let pages =
-        Routing.filterMatchingHandlers requestPath (Map.values canvas.handlers)
+        // Filter down canvas' handlers to those (hopefully only one) that match
+        let pages =
+          Routing.filterMatchingHandlers requestPath (Map.values canvas.handlers)
 
-      match pages with
-      // matching handler found - process normally
-      | [ { spec = PT.Handler.HTTP (route = route); tlid = tlid } as handler ] ->
-        Telemetry.addTags [ "handler.route", route; "handler.tlid", tlid ]
+        match pages with
+        // matching handler found - process normally
+        | [ { spec = PT.Handler.HTTP (route = route); tlid = tlid } as handler ] ->
+          Telemetry.addTags [ "handler.route", route; "handler.tlid", tlid ]
 
-        // TODO: I think we could put this into the middleware
-        let routeVars = Routing.routeInputVars route requestPath
+          // TODO: I think we could put this into the middleware
+          let routeVars = Routing.routeInputVars route requestPath
 
-        let! reqBody = getBody ctx
-        let reqHeaders = getHeadersMergingKeys ctx
-        let reqQuery = getQuery ctx
+          let! reqBody = getBody ctx
+          let reqHeaders = getHeadersMergingKeys ctx
+          let reqQuery = getQuery ctx
 
-        match routeVars with
-        | Some routeVars ->
-          Telemetry.addTag "handler.routeVars" routeVars
+          match routeVars with
+          | Some routeVars ->
+            Telemetry.addTag "handler.routeVars" routeVars
 
-          // Do request
-          use _ = Telemetry.child "executeHandler" []
+            // Do request
+            use _ = Telemetry.child "executeHandler" []
 
-          let request =
-            LegacyHttpMiddleware.Request.fromRequest
-              false
-              url
-              reqHeaders
-              reqQuery
-              reqBody
-          let inputVars = routeVars |> Map |> Map.add "request" request
-          let! (result, _) =
-            RealExe.executeHandler
-              ClientTypes2BackendTypes.Pusher.eventSerializer
-              canvas.meta
-              (PT2RT.Handler.toRT handler)
-              (Canvas.toProgram canvas)
-              traceID
-              inputVars
-              (RealExe.InitialExecution(desc, "request", request))
-
-          let result = LegacyHttpMiddleware.Response.toHttpResponse result
-          let result =
-            LegacyHttpMiddleware.Cors.addCorsHeaders reqHeaders meta.name result
-
-          do! writeResponseToContext ctx result.statusCode result.headers result.body
-          Telemetry.addTag "http.completion_reason" "success"
-
-          return ctx
-
-        | None -> // vars didnt parse
-          FireAndForget.fireAndForgetTask "store-event" (fun () ->
             let request =
               LegacyHttpMiddleware.Request.fromRequest
                 false
@@ -413,95 +407,126 @@ let runDarkHandler (ctx : HttpContext) : Task<HttpContext> =
                 reqHeaders
                 reqQuery
                 reqBody
-            TI.storeEvent meta.id traceID desc request)
+            let inputVars = routeVars |> Map |> Map.add "request" request
+            let! (result, _) =
+              RealExe.executeHandler
+                ClientTypes2BackendTypes.Pusher.eventSerializer
+                canvas.meta
+                (PT2RT.Handler.toRT handler)
+                (Canvas.toProgram canvas)
+                traceID
+                inputVars
+                (RealExe.InitialExecution(desc, "request", request))
 
-          return! unmatchedRouteResponse ctx requestPath route
+            let result = LegacyHttpMiddleware.Response.toHttpResponse result
+            let result =
+              LegacyHttpMiddleware.Cors.addCorsHeaders reqHeaders meta.name result
 
-      | [ { spec = PT.Handler.HTTPBasic (route = route); tlid = tlid } as handler ] ->
-        Telemetry.addTags [ "handler.route", route; "handler.tlid", tlid ]
+            do!
+              writeResponseToContext ctx result.statusCode result.headers result.body
+            Telemetry.addTag "http.completion_reason" "success"
 
-        let routeVars = Routing.routeInputVars route requestPath
+            return ctx
 
-        let! reqBody = getBody ctx
-        let reqHeaders = getHeadersWithoutMergingKeys ctx
+          | None -> // vars didnt parse
+            FireAndForget.fireAndForgetTask "store-event" (fun () ->
+              let request =
+                LegacyHttpMiddleware.Request.fromRequest
+                  false
+                  url
+                  reqHeaders
+                  reqQuery
+                  reqBody
+              TI.storeEvent meta.id traceID desc request)
 
-        match routeVars with
-        | Some routeVars ->
-          Telemetry.addTag "handler.routeVars" routeVars
+            return! unmatchedRouteResponse ctx requestPath route
 
-          // Do request
-          use _ = Telemetry.child "executeHandler" []
+        | [ { spec = PT.Handler.HTTPBasic (route = route); tlid = tlid } as handler ] ->
+          Telemetry.addTags [ "handler.route", route; "handler.tlid", tlid ]
 
-          let request =
-            HttpBasicMiddleware.Request.fromRequest url reqHeaders reqBody
-          let inputVars = routeVars |> Map |> Map.add "request" request
-          let! (result, _) =
-            RealExe.executeHandler
-              ClientTypes2BackendTypes.Pusher.eventSerializer
-              canvas.meta
-              (PT2RT.Handler.toRT handler)
-              (Canvas.toProgram canvas)
-              traceID
-              inputVars
-              (RealExe.InitialExecution(desc, "request", request))
+          let routeVars = Routing.routeInputVars route requestPath
 
-          let result = HttpBasicMiddleware.Response.toHttpResponse result
+          let! reqBody = getBody ctx
+          let reqHeaders = getHeadersWithoutMergingKeys ctx
 
-          do! writeResponseToContext ctx result.statusCode result.headers result.body
-          Telemetry.addTag "http.completion_reason" "success"
+          match routeVars with
+          | Some routeVars ->
+            Telemetry.addTag "handler.routeVars" routeVars
 
-          return ctx
+            // Do request
+            use _ = Telemetry.child "executeHandler" []
 
-        | None -> // vars didnt parse
-          FireAndForget.fireAndForgetTask "store-event" (fun () ->
             let request =
               HttpBasicMiddleware.Request.fromRequest url reqHeaders reqBody
-            TI.storeEvent meta.id traceID desc request)
+            let inputVars = routeVars |> Map |> Map.add "request" request
+            let! (result, _) =
+              RealExe.executeHandler
+                ClientTypes2BackendTypes.Pusher.eventSerializer
+                canvas.meta
+                (PT2RT.Handler.toRT handler)
+                (Canvas.toProgram canvas)
+                traceID
+                inputVars
+                (RealExe.InitialExecution(desc, "request", request))
 
-          return! unmatchedRouteResponse ctx requestPath route
+            let result = HttpBasicMiddleware.Response.toHttpResponse result
 
-      | [] when string ctx.Request.Path = "/favicon.ico" ->
-        return! faviconResponse ctx
+            do!
+              writeResponseToContext ctx result.statusCode result.headers result.body
+            Telemetry.addTag "http.completion_reason" "success"
 
-      | [] when ctx.Request.Method = "OPTIONS" ->
-        let reqHeaders = getHeadersMergingKeys ctx
+            return ctx
 
-        match LegacyHttpMiddleware.Cors.optionsResponse reqHeaders meta.name with
-        | Some response ->
-          Telemetry.addTag "http.completion_reason" "options response"
-          do!
-            writeResponseToContext
-              ctx
-              response.statusCode
-              response.headers
-              response.body
-        | None -> Telemetry.addTag "http.completion_reason" "options none"
-        return ctx
+          | None -> // vars didnt parse
+            FireAndForget.fireAndForgetTask "store-event" (fun () ->
+              let request =
+                HttpBasicMiddleware.Request.fromRequest url reqHeaders reqBody
+              TI.storeEvent meta.id traceID desc request)
 
-      // no matching route found - store as 404
-      | [] ->
-        let! reqBody = getBody ctx
-        let reqHeaders = getHeadersMergingKeys ctx
-        let reqQuery = getQuery ctx
-        let event =
-          LegacyHttpMiddleware.Request.fromRequest
-            true
-            url
-            reqHeaders
-            reqQuery
-            reqBody
-        let! timestamp = TI.storeEvent meta.id traceID desc event
+            return! unmatchedRouteResponse ctx requestPath route
 
-        // CLEANUP: move pusher into storeEvent
-        // Send to pusher - do not resolve task, send this into the ether
-        Pusher.push
-          ClientTypes2BackendTypes.Pusher.eventSerializer
-          meta.id
-          (Pusher.New404("HTTP", requestPath, requestMethod, timestamp, traceID))
-          None
+        | [] when string ctx.Request.Path = "/favicon.ico" ->
+          return! faviconResponse ctx
 
-        return! noHandlerResponse ctx
-      | _ -> return! moreThanOneHandlerResponse ctx
+        | [] when ctx.Request.Method = "OPTIONS" ->
+          let reqHeaders = getHeadersMergingKeys ctx
+
+          match LegacyHttpMiddleware.Cors.optionsResponse reqHeaders meta.name with
+          | Some response ->
+            Telemetry.addTag "http.completion_reason" "options response"
+            do!
+              writeResponseToContext
+                ctx
+                response.statusCode
+                response.headers
+                response.body
+          | None -> Telemetry.addTag "http.completion_reason" "options none"
+          return ctx
+
+        // no matching route found - store as 404
+        | [] ->
+          let! reqBody = getBody ctx
+          let reqHeaders = getHeadersMergingKeys ctx
+          let reqQuery = getQuery ctx
+          let event =
+            LegacyHttpMiddleware.Request.fromRequest
+              true
+              url
+              reqHeaders
+              reqQuery
+              reqBody
+          let! timestamp = TI.storeEvent meta.id traceID desc event
+
+          // CLEANUP: move pusher into storeEvent
+          // Send to pusher - do not resolve task, send this into the ether
+          Pusher.push
+            ClientTypes2BackendTypes.Pusher.eventSerializer
+            meta.id
+            (Pusher.New404("HTTP", requestPath, requestMethod, timestamp, traceID))
+            None
+
+          return! noHandlerResponse ctx
+        | _ -> return! moreThanOneHandlerResponse ctx
     | None -> return! canvasNotFoundResponse ctx
   }
 
