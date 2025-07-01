@@ -170,18 +170,17 @@ let processNotification
                 Telemetry.addTags [ "canvas_name", c.meta.name; "trace_id", traceID ]
 
                 // We're winding down Darklang-Classic
-                // This snippet short-circuits QW to ignore events for inactive canvases
+                // This snippet short-circuits QW to delay events for inactive canvases
                 //   , while brownouts are active.
-                // The hope is that users expecting things to be working will figure out that their canvas has ... stopped working.
-                //
-                // hmm but how do we handle recovery? what if there's a once-a-day cron, and a brownout causes a skip-over?
-                //   shouldn't we 'recover' by ensuring it runs when we're back online?
-                // maybe we don't care -- they should have let us know.
-                // in fact it's probably best that we just throw the event away, or mark it as done or something.
+                // Events are retried with a delay so they can be processed
+                //   if/when the canvas is marked as `keep_active: true`.
+                // Note that they'll only be retried 5 times total, though
+                //   , per logic elsewhere in this file
                 let! canvasShouldBeKeptActive =
                   Canvas.shouldCanvasBeKeptActive c.meta.id
                 if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
-                  return! stop "InactiveCanvas" NoRetry
+                  let retryDelay = NodaTime.Duration.FromHours 1.0
+                  return! stop "InactiveCanvas" (Retry retryDelay)
                 else
                   // CLEANUP switch events and scheduling rules to use TLIDs instead of eventDescs
                   let h =
