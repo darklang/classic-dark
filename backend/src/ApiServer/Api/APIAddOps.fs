@@ -19,6 +19,7 @@ module PT = LibExecution.ProgramTypes
 module AT = LibExecution.AnalysisTypes
 module CTApi = ClientTypes.Api
 module CT2Ops = ClientTypes2BackendTypes.Ops
+module LD = LibService.LaunchDarkly
 
 // Toplevel deletion:
 // * The server announces that a toplevel is deleted by it appearing in
@@ -36,6 +37,20 @@ module V1 =
     task {
       use t = startTimer "read-api" ctx
       let canvasInfo = loadCanvasInfo ctx
+
+      // We're winding down Darklang-Classic
+      // This snippet short-circuits ApiServer to fail on requests to inactive canvases
+      //   , while brownouts are active.
+      let! canvasShouldBeKeptActive = C.shouldCanvasBeKeptActive canvasInfo.id
+      if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+        raise (
+          HttpStatusException(
+            410,
+            "Darklang-Classic is winding down: https://blog.darklang.com/winding-down-darklang-classic. "
+            + "Your canvas has not been marked to be kept active - "
+            + "please reach out at classic@darklang.com if you'd like to keep your canvas active during the brownout period and beyond."
+          )
+        )
 
       let! p = ctx.ReadVanillaJsonAsync<CTApi.Ops.AddOpV1.Request>()
       let p = CT2Ops.AddOpParamsV1.fromCT p

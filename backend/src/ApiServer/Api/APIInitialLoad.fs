@@ -21,6 +21,7 @@ module SchedulingRules = LibBackend.QueueSchedulingRules
 module CT2Program = ClientTypes2ExecutionTypes.ProgramTypes
 module CT2StaticDeploy = ClientTypes2BackendTypes.StaticDeploy
 module CT2Auth = ClientTypes2BackendTypes.Authorization
+module LD = LibService.LaunchDarkly
 
 module V1 =
   /// API endpoint called when client initially loads a Canvas
@@ -35,6 +36,20 @@ module V1 =
       let user = loadUserInfo ctx
       let canvasInfo = loadCanvasInfo ctx
       let permission = loadPermission ctx
+
+      // We're winding down Darklang-Classic
+      // This snippet short-circuits ApiServer to fail on requests to inactive canvases
+      //   , while brownouts are active.
+      let! canvasShouldBeKeptActive = Canvas.shouldCanvasBeKeptActive canvasInfo.id
+      if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+        raise (
+          HttpStatusException(
+            410,
+            "Darklang-Classic is winding down: https://blog.darklang.com/winding-down-darklang-classic. "
+            + "Your canvas has not been marked to be kept active - "
+            + "please reach out at classic@darklang.com if you'd like to keep your canvas active during the brownout period and beyond."
+          )
+        )
 
       t.next "load-canvas"
       let! canvas = Canvas.loadAll canvasInfo
