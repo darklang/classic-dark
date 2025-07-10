@@ -20,6 +20,7 @@ module PT = LibExecution.ProgramTypes
 module BinarySerialization = LibBinarySerialization.BinarySerialization
 module PTParser = LibExecution.ProgramTypesParser
 module Telemetry = LibService.Telemetry
+module LD = LibService.LaunchDarkly
 
 
 let isLatestOpRequest
@@ -249,7 +250,7 @@ type CronScheduleData =
 ///   deleted) to (NULL, NULL, True);  so our query `WHERE module = 'CRON'`
 ///   ignores deleted CRONs.)
 let fetchActiveCrons () : Task<List<CronScheduleData>> =
-  Sql.query
+  let q =
     "SELECT canvas_id,
                   tlid,
                   modifier,
@@ -263,6 +264,10 @@ let fetchActiveCrons () : Task<List<CronScheduleData>> =
         AND modifier <> ''
         AND toplevel_oplists.name IS NOT NULL
         AND deleted IS FALSE"
+
+  let q = if LD.brownoutIsActive () then q + " AND keep_active = TRUE" else q
+
+  Sql.query q
   |> Sql.executeAsync (fun read ->
     let interval = read.string "modifier"
     let canvasID = read.uuid "canvas_id"

@@ -1764,15 +1764,20 @@ let update_ = (msg: msg, m: model): modification => {
       },
     )
   | AddOpsAPICallback(_, params, Error(err)) =>
-    HandleAPIError(
-      APIError.make(
-        ~context="AddOps",
-        ~importance=ImportantError,
-        ~requestParams=APIAddOps.Params.encode(params),
-        ~reload=false,
-        err,
-      ),
-    )
+    switch err {
+    | Http.BadStatus(response) when response.status.code == 410 =>
+      Model.updateErrorMod(Error.set(APIError.parseResponse(response.body)))
+    | _ =>
+      HandleAPIError(
+        APIError.make(
+          ~context="AddOps",
+          ~importance=ImportantError,
+          ~requestParams=APIAddOps.Params.encode(params),
+          ~reload=false,
+          err,
+        ),
+      )
+    }
   | SaveTestAPICallback(Error(err)) =>
     Model.updateErrorMod(Error.set("Error: " ++ Tea.Http.stringOfError(err)))
   | ExecuteFunctionAPICallback(params, Error(err)) =>
@@ -1790,9 +1795,14 @@ let update_ = (msg: msg, m: model): modification => {
       APIError.make(~context="TriggerHandler", ~importance=ImportantError, err, ~reload=false),
     )
   | InitialLoadAPICallback(_, _, Error(err)) =>
-    HandleAPIError(
-      APIError.make(~context="InitialLoad", ~importance=ImportantError, err, ~reload=false),
-    )
+    switch err {
+    | Http.BadStatus(response) when response.status.code == 410 =>
+      Model.updateErrorMod(Error.set(APIError.parseResponse(response.body)))
+    | _ =>
+      HandleAPIError(
+        APIError.make(~context="InitialLoad", ~importance=ImportantError, err, ~reload=false),
+      )
+    }
   | GetUnlockedDBsAPICallback(Error(err)) =>
     Many(list{
       ReplaceAllModificationsWithThisOne(

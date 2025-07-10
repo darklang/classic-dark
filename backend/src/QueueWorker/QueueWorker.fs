@@ -169,81 +169,93 @@ let processNotification
                 let desc = (event.module', event.name, event.modifier)
                 Telemetry.addTags [ "canvas_name", c.meta.name; "trace_id", traceID ]
 
+                // We're winding down Darklang-Classic
+                // This snippet short-circuits QW to delay events for inactive canvases
+                //   , while brownouts are active.
+                // Events are retried with a delay so they can be processed
+                //   if/when the canvas is marked as `keep_active: true`.
+                // Note that they'll only be retried 5 times total, though
+                //   , per logic elsewhere in this file
+                let! canvasShouldBeKeptActive =
+                  Canvas.shouldCanvasBeKeptActive c.meta.id
+                if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+                  let retryDelay = NodaTime.Duration.FromHours 1.0
+                  return! stop "InactiveCanvas" (Retry retryDelay)
+                else
+                  // CLEANUP switch events and scheduling rules to use TLIDs instead of eventDescs
+                  let h =
+                    c.handlers
+                    |> Map.values
+                    |> List.filter (fun h ->
+                      Some desc = PTParser.Handler.Spec.toEventDesc h.spec)
+                    |> List.head
 
-                // CLEANUP switch events and scheduling rules to use TLIDs instead of eventDescs
-                let h =
-                  c.handlers
-                  |> Map.values
-                  |> List.filter (fun h ->
-                    Some desc = PTParser.Handler.Spec.toEventDesc h.spec)
-                  |> List.head
-
-                match h with
-                | None ->
-                  // If an event gets put in the queue and there's no handler for it,
-                  // they're probably emiting to a handler they haven't created yet.
-                  // In this case, all they need to build is the trace. So just drop
-                  // this event immediately.
-                  let! timestamp = TI.storeEvent c.meta.id traceID desc event.value
-                  Pusher.push
-                    ClientTypes2BackendTypes.Pusher.eventSerializer
-                    c.meta.id
-                    (Pusher.New404(
-                      event.module',
-                      event.name,
-                      event.modifier,
-                      timestamp,
-                      traceID
-                    ))
-                    None
-                  do! EQ.deleteEvent event
-                  return! stop "MissingHandler" NoRetry
-                | Some h ->
-
-                  // If we acknowledge the event here, and the machine goes down,
-                  // PubSub will retry this once the ack deadline runs out
-                  do! EQ.extendDeadline notification
-
-                  // CLEANUP Set a time limit of 3m
-                  try
-                    let program = Canvas.toProgram c
-                    let! (result, traceResults) =
-                      RealExecution.executeHandler
-                        ClientTypes2BackendTypes.Pusher.eventSerializer
-                        c.meta
-                        (PT2RT.Handler.toRT h)
-                        program
+                  match h with
+                  | None ->
+                    // If an event gets put in the queue and there's no handler for it,
+                    // they're probably emiting to a handler they haven't created yet.
+                    // In this case, all they need to build is the trace. So just drop
+                    // this event immediately.
+                    let! timestamp = TI.storeEvent c.meta.id traceID desc event.value
+                    Pusher.push
+                      ClientTypes2BackendTypes.Pusher.eventSerializer
+                      c.meta.id
+                      (Pusher.New404(
+                        event.module',
+                        event.name,
+                        event.modifier,
+                        timestamp,
                         traceID
-                        (Map [ "event", event.value ])
-                        (RealExecution.InitialExecution(
-                          EQ.toEventDesc event,
-                          "event",
-                          event.value
-                        ))
-
-                    Telemetry.addTags [ "result_type", resultType result
-                                        "queue.success", true
-                                        "executed_tlids",
-                                        HashSet.toList traceResults.tlids
-                                        "queue.completion_reason", "completed" ]
-                    // ExecutesToCompletion
-
-                    // -------
-                    // Delete
-                    // -------
+                      ))
+                      None
                     do! EQ.deleteEvent event
-                    do! EQ.acknowledgeEvent notification
+                    return! stop "MissingHandler" NoRetry
+                  | Some h ->
 
-                    // -------
-                    // End
-                    // -------
-                    return Ok(event, notification)
-                  with
-                  | _ ->
-                    // This automatically increments the deliveryAttempt, so it might
-                    // be deleted at the next iteration.
-                    let timeLeft = NodaTime.Duration.FromSeconds 301.0
-                    return! stop "RetryAllowed" (Retry timeLeft)
+                    // If we acknowledge the event here, and the machine goes down,
+                    // PubSub will retry this once the ack deadline runs out
+                    do! EQ.extendDeadline notification
+
+                    // CLEANUP Set a time limit of 3m
+                    try
+                      let program = Canvas.toProgram c
+                      let! (result, traceResults) =
+                        RealExecution.executeHandler
+                          ClientTypes2BackendTypes.Pusher.eventSerializer
+                          c.meta
+                          (PT2RT.Handler.toRT h)
+                          program
+                          traceID
+                          (Map [ "event", event.value ])
+                          (RealExecution.InitialExecution(
+                            EQ.toEventDesc event,
+                            "event",
+                            event.value
+                          ))
+
+                      Telemetry.addTags [ "result_type", resultType result
+                                          "queue.success", true
+                                          "executed_tlids",
+                                          HashSet.toList traceResults.tlids
+                                          "queue.completion_reason", "completed" ]
+                      // ExecutesToCompletion
+
+                      // -------
+                      // Delete
+                      // -------
+                      do! EQ.deleteEvent event
+                      do! EQ.acknowledgeEvent notification
+
+                      // -------
+                      // End
+                      // -------
+                      return Ok(event, notification)
+                    with
+                    | _ ->
+                      // This automatically increments the deliveryAttempt, so it might
+                      // be deleted at the next iteration.
+                      let timeLeft = NodaTime.Duration.FromSeconds 301.0
+                      return! stop "RetryAllowed" (Retry timeLeft)
   }
 
 /// Run in the background, using the semaphore to track completion

@@ -18,6 +18,7 @@ module File = LibBackend.File
 module Config = LibBackend.Config
 module Session = LibBackend.Session
 module Account = LibBackend.Account
+module LD = LibService.LaunchDarkly
 
 /// Loads the Admin UI HTML template
 ///
@@ -131,6 +132,20 @@ let uiHtml
 
   string t
 
+let accountNotActiveHtml : string =
+  "<!DOCTYPE html><html>
+    <head><title>Service Unavailable</title></head>
+    <body>
+      <h1>Service Unavailable</h1>
+      <p>
+        Darklang-Classic is winding down:
+        <a href=\"https://blog.darklang.com/winding-down-darklang-classic\">
+          https://blog.darklang.com/winding-down-darklang-classic
+        </a>. <br/>
+        If you see this message, your account has not been marked to be kept active - please reach out at classic@darklang.com if you'd like to keep your account active.
+      </p>
+    </body></html>"
+
 /// API endpoint that returns HTML for given Canvas
 ///
 /// Contains special logic for special case of integration tests
@@ -138,43 +153,52 @@ let uiHandler (ctx : HttpContext) : Task<string> =
   task {
     use t = startTimer "read-request" ctx
     let user = loadUserInfo ctx
-    let sessionData = loadSessionData ctx
-    let canvasInfo = loadCanvasInfo ctx
-    let! tunnelHost =
-      if ctx.Request.Query.ContainsKey "use-assets-tunnel" then
-        Account.tunnelHostFor user.id
-      else
-        Task.FromResult None
 
-    t.next "create-at"
-    let! createdAt = Account.getUserCreatedAt user.username
+    // We're winding down Darklang-Classic
+    // This snippet short-circuits UI access to fail for inactive accounts
+    //   while brownouts are active.
+    // The hope is that users hitting the UI will be informed of the outage
+    let! accountShouldBeKeptActive = Account.shouldAccountBeKeptActive user.id
+    if LD.brownoutIsActive () && (not accountShouldBeKeptActive) then
+      return accountNotActiveHtml
+    else
+      let sessionData = loadSessionData ctx
+      let canvasInfo = loadCanvasInfo ctx
+      let! tunnelHost =
+        if ctx.Request.Query.ContainsKey "use-assets-tunnel" then
+          Account.tunnelHostFor user.id
+        else
+          Task.FromResult None
 
-    // Create the data for integration tests
-    t.next "integration-tests"
-    let integrationTests =
-      ctx.GetQueryStringValue "integration-test" |> Option.isSome
+      t.next "create-at"
+      let! createdAt = Account.getUserCreatedAt user.username
 
-    if integrationTests && Config.allowTestRoutes then
-      do! IntegrationTests.loadAndResaveFromTestFile canvasInfo
+      // Create the data for integration tests
+      t.next "integration-tests"
+      let integrationTests =
+        ctx.GetQueryStringValue "integration-test" |> Option.isSome
 
-    // CLEANUP this results in 2 DB queries, but could be reduced to 1
-    let! canAccessOperations =
-      Account.usernameForUserID canvasInfo.owner
-      |> Task.bind (fun u ->
-        match u with
-        | Some u -> Account.canAccessOperations u
-        | None -> Task.FromResult false)
+      if integrationTests && Config.allowTestRoutes then
+        do! IntegrationTests.loadAndResaveFromTestFile canvasInfo
 
-    t.next "html-response"
-    let result =
-      uiHtml
-        canvasInfo.id
-        canvasInfo.name
-        canAccessOperations
-        sessionData.csrfToken
-        tunnelHost
-        createdAt
-        user
+      // CLEANUP this results in 2 DB queries, but could be reduced to 1
+      let! canAccessOperations =
+        Account.usernameForUserID canvasInfo.owner
+        |> Task.bind (fun u ->
+          match u with
+          | Some u -> Account.canAccessOperations u
+          | None -> Task.FromResult false)
 
-    return result
+      t.next "html-response"
+      let result =
+        uiHtml
+          canvasInfo.id
+          canvasInfo.name
+          canAccessOperations
+          sessionData.csrfToken
+          tunnelHost
+          createdAt
+          user
+
+      return result
   }

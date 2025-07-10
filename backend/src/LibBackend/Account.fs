@@ -214,6 +214,13 @@ let getUserCreatedAt (username : UserName.T) : Task<NodaTime.Instant> =
   |> Sql.parameters [ "username", Sql.string (string username) ]
   |> Sql.executeRowAsync (fun read -> read.instantWithoutTimeZone "created_at")
 
+/// We're winding down Darklang-Classic;
+/// should this account be kept alive during brownouts, and beyond?
+let shouldAccountBeKeptActive (id : UserID) : Task<bool> =
+  Sql.query "SELECT keep_active FROM accounts WHERE id = @id"
+  |> Sql.parameters [ "id", Sql.uuid id ]
+  |> Sql.executeRowAsync (fun read -> read.bool "keep_active")
+
 let getUserAndCreatedAtAndAnalyticsMetadata
   (username : UserName.T)
   : Task<Option<UserInfoAndCreatedAt * Option<string>>> =

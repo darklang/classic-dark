@@ -34,6 +34,14 @@ let canvasIDForCanvasName
                       "canvasName", Sql.string (string canvasName) ]
   |> Sql.executeRowAsync (fun read -> read.uuid "canvas_id")
 
+
+/// We're winding down Darklang-Classic;
+/// should this canvas be kept alive during brownouts, and beyond?
+let shouldCanvasBeKeptActive (id : CanvasID) : Task<bool> =
+  Sql.query "SELECT keep_active FROM canvases WHERE id = @id"
+  |> Sql.parameters [ "id", Sql.uuid id ]
+  |> Sql.executeRowAsync (fun read -> read.bool "keep_active")
+
 /// Fetch high-level metadata for a canvas
 let getMetaAndCreate (canvasName : CanvasName.T) : Task<Meta> =
   task {

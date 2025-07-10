@@ -22,6 +22,9 @@ open Tablecloth
 open LibService.Telemetry
 open LibService.Exception
 
+/// Exception for HTTP status codes with custom messages
+exception HttpStatusException of int * string
+
 module Canvas = LibBackend.Canvas
 module Config = LibBackend.Config
 module Session = LibBackend.Session
@@ -230,8 +233,13 @@ let htmlHandler (f : HttpContext -> Task<string>) : HttpHandler =
 let clientJsonHandler (f : HttpContext -> Task<'a>) : HttpHandler =
   (fun ctx ->
     task {
-      let! result = f ctx
-      return! ctx.WriteClientJsonAsync result
+      try
+        let! result = f ctx
+        return! ctx.WriteClientJsonAsync result
+      with
+      | HttpStatusException (statusCode, message) ->
+        ctx.Response.StatusCode <- statusCode
+        return! ctx.WriteTextAsync message
     })
 
 /// Helper to write a Optional value as serialized JSON response body
