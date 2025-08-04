@@ -138,11 +138,12 @@ let accountNotActiveHtml : string =
     <body>
       <h1>Service Unavailable</h1>
       <p>
-        Darklang-Classic is winding down:
+        Darklang-Classic has been wound down:
         <a href=\"https://blog.darklang.com/winding-down-darklang-classic\">
           https://blog.darklang.com/winding-down-darklang-classic
         </a>. <br/>
-        If you see this message, your account has not been marked to be kept active - please reach out at classic@darklang.com if you'd like to keep your account active.
+        If you see this message, your account was not marked to be kept active -
+        please reach out at classic@darklang.com if you'd like us to bring your account+access back.
       </p>
     </body></html>"
 
@@ -154,12 +155,10 @@ let uiHandler (ctx : HttpContext) : Task<string> =
     use t = startTimer "read-request" ctx
     let user = loadUserInfo ctx
 
-    // We're winding down Darklang-Classic
-    // This snippet short-circuits UI access to fail for inactive accounts
-    //   while brownouts are active.
-    // The hope is that users hitting the UI will be informed of the outage
+    // This snippet short-circuits UI access to fail for inactive accounts.
+    // The hope is that users hitting the UI will be informed of the outage.
     let! accountShouldBeKeptActive = Account.shouldAccountBeKeptActive user.id
-    if LD.brownoutIsActive () && (not accountShouldBeKeptActive) then
+    if not accountShouldBeKeptActive then
       return accountNotActiveHtml
     else
       let sessionData = loadSessionData ctx

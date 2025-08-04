@@ -10,6 +10,12 @@ During the brownout:
 After the brownout is complete,
 - we will do a one-time backup to all data, in case anyone totally missed the brownout period
 - we will delete all accounts and canvases that do not have the keep_active flag on, along with any related data
+
+edit, post-brownout:
+the data sitting in the DB isn't really hurting us, and we're occasionally get folks
+who want to be updated to stay active, so we're just making the brownout permanent,
+and not purging _all_ of their data. That said, purging anyone who explicitly
+requests to be purged. (we have a script for that)
 */
 
 ALTER TABLE canvases ADD COLUMN keep_active BOOLEAN DEFAULT FALSE;

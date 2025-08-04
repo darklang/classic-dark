@@ -178,7 +178,7 @@ let processNotification
                 //   , per logic elsewhere in this file
                 let! canvasShouldBeKeptActive =
                   Canvas.shouldCanvasBeKeptActive c.meta.id
-                if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+                if not canvasShouldBeKeptActive then
                   let retryDelay = NodaTime.Duration.FromHours 1.0
                   return! stop "InactiveCanvas" (Retry retryDelay)
                 else

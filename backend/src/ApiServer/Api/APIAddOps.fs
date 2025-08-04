@@ -42,13 +42,13 @@ module V1 =
       // This snippet short-circuits ApiServer to fail on requests to inactive canvases
       //   , while brownouts are active.
       let! canvasShouldBeKeptActive = C.shouldCanvasBeKeptActive canvasInfo.id
-      if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+      if not canvasShouldBeKeptActive then
         raise (
           HttpStatusException(
             410,
-            "Darklang-Classic is winding down: https://blog.darklang.com/winding-down-darklang-classic. "
+            "Darklang-Classic has been wound down: https://blog.darklang.com/winding-down-darklang-classic. "
             + "Your canvas has not been marked to be kept active - "
-            + "please reach out at classic@darklang.com if you'd like to keep your canvas active during the brownout period and beyond."
+            + "please reach out at classic@darklang.com if you'd like us to turn your canvas+access back on."
           )
         )
 

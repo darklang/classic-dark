@@ -296,5 +296,3 @@ let queueMaxConcurrentEventsPerWorker =
 /// Delay between fetches from the queue when something goes wrong
 let queueDelayBetweenPullsInMillis =
   Internal.intConfig "queue-delay-between-pubsub-pulls-in-millis" 1000 1000
-
-let brownoutIsActive = Internal.boolConfig "brownout-active" false false
