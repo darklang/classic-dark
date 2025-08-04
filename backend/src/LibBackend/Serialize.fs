@@ -263,9 +263,8 @@ let fetchActiveCrons () : Task<List<CronScheduleData>> =
         AND modifier IS NOT NULL
         AND modifier <> ''
         AND toplevel_oplists.name IS NOT NULL
-        AND deleted IS FALSE"
-
-  let q = if LD.brownoutIsActive () then q + " AND keep_active = TRUE" else q
+        AND deleted IS FALSE
+        AND keep_active = TRUE"
 
   Sql.query q
   |> Sql.executeAsync (fun read ->

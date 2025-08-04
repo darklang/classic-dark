@@ -231,9 +231,9 @@ let canvasNotActiveResponse (ctx : HttpContext) : Task<HttpContext> =
   Telemetry.addTag "http.completion_reason" "canvasNotActive"
   standardResponse
     ctx
-    ("Darklang-Classic is winding down: https://blog.darklang.com/winding-down-darklang-classic. "
-     + "If you see this message, your canvas has not been marked to be kept active - "
-     + "please reach out at classic@darklang.com if you'd like to keep your canvas active. "
+    ("Darklang-Classic has been wound down: https://blog.darklang.com/winding-down-darklang-classic. "
+     + "If you see this message, your canvas was not marked to be kept active - "
+     + "please reach out at classic@darklang.com if you'd like us to bring your canvas+access back."
      + "If you are not the developer of this canvas, and are a user, please contact the admin of the service you are trying to access.")
     textPlain
     410
@@ -350,7 +350,7 @@ let runDarkHandler (ctx : HttpContext) : Task<HttpContext> =
       // The hope is that users hitting those endpoints will be informed of the outage
       //   (and if those folks aren't the devs, they should tell the devs)
       let! canvasShouldBeKeptActive = Canvas.shouldCanvasBeKeptActive meta.id
-      if LD.brownoutIsActive () && (not canvasShouldBeKeptActive) then
+      if not canvasShouldBeKeptActive then
         return! canvasNotActiveResponse ctx
       else
         ctx.Items[ "canvasName" ] <- meta.name // store for exception tracking
