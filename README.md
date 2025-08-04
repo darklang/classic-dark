@@ -8,8 +8,8 @@ expanding features, or otherwise contributing.
 Darklang is [open source](https://blog.darklang.com/darklang-goes-open-source/) under the Apache License 2.0.
 See our [LICENSE.md](https://github.com/darklang/dark/blob/main/LICENSE.md).
 
-This is not under active development, and Darklang, Inc. is currently
-[winding down](https://blog.darklang.com/winding-down-darklang-classic/) the production instance of this service.
+This is not under active development, and Darklang, Inc. has been
+[wound down](https://blog.darklang.com/winding-down-darklang-classic/) the production instance of this service.
 See instead the [dark repo](https://github.com/darklang/dark) for recent work.
 
 [![Ceasefire Now](https://badge.techforpalestine.org/ceasefire-now)](https://techforpalestine.org/learn-more)
