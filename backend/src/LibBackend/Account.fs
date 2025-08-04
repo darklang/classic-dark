@@ -69,9 +69,9 @@ let upsertAccount (admin : bool) (account : Account) : Task<Result<unit, string>
       return!
         Sql.query
           "INSERT INTO accounts
-             (id, username, name, email, admin, password)
+             (id, username, name, email, admin, password, keep_active)
              VALUES
-             (@id, @username, @name, @email, @admin, @password)
+             (@id, @username, @name, @email, @admin, @password, @keep_active)
              ON CONFLICT (username)
              DO UPDATE SET name = EXCLUDED.name,
                            email = EXCLUDED.email,
@@ -81,7 +81,8 @@ let upsertAccount (admin : bool) (account : Account) : Task<Result<unit, string>
                             "admin", Sql.bool admin
                             "name", Sql.string account.name
                             "email", Sql.string account.email
-                            ("password", account.password |> string |> Sql.string) ]
+                            ("password", account.password |> string |> Sql.string)
+                            "keep_active", Sql.bool true ]
         |> Sql.executeStatementAsync
         |> Task.map Ok
     | Error _ as result -> return result
@@ -120,9 +121,9 @@ let insertUser
         do!
           Sql.query
             "INSERT INTO accounts
-              (id, username, name, email, admin, password, segment_metadata)
+              (id, username, name, email, admin, password, segment_metadata, keep_active)
               VALUES
-              (@id, @username, @name, @email, false, @password, @metadata)
+              (@id, @username, @name, @email, false, @password, @metadata, @keepActive)
               ON CONFLICT DO NOTHING"
           |> Sql.parameters [ "id", Sql.uuid (System.Guid.NewGuid())
                               "username", Sql.string (string username)
@@ -133,7 +134,9 @@ let insertUser
                                Sql.jsonb (
                                  DvalReprInternalDeprecated.toInternalQueryableV1
                                    analyticsMetadata
-                               )) ]
+                               ))
+                                "keepActive",
+                              Sql.bool true ]
           |> Sql.executeStatementAsync
 
         // verify insert worked
