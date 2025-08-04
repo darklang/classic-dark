@@ -135,8 +135,7 @@ let insertUser
                                  DvalReprInternalDeprecated.toInternalQueryableV1
                                    analyticsMetadata
                                ))
-                                "keepActive",
-                              Sql.bool true ]
+                              "keepActive", Sql.bool true ]
           |> Sql.executeStatementAsync
 
         // verify insert worked
