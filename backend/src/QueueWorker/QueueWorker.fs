@@ -353,7 +353,7 @@ let main _ : int =
     print "Starting QueueWorker"
     initSerializers ()
     LibService.Init.init name
-    Telemetry.Console.loadTelemetry name Telemetry.TraceDBQueries
+    Telemetry.Console.loadTelemetry name Telemetry.DontTraceDBQueries
     (LibBackend.Init.init LibBackend.Init.WaitForDB name).Result
     (LibRealExecution.Init.init name).Result
 
