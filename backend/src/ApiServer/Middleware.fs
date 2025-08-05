@@ -94,10 +94,11 @@ let userInfoMiddleware : HttpMiddleware =
       | None -> return! redirectOr notFound ctx
       | Some user ->
         ctx.SetHeader("x-darklang-username", string user.username)
-        t.span ()
-        |> Telemetry.Span.addTags [ "username", sessionData.username
-                                    "userID", user.id
-                                    "is_admin", user.admin ]
+        if System.Random().Next(20) = 0 then
+          t.span ()
+          |> Telemetry.Span.addTags [ "username", sessionData.username
+                                      "userID", user.id
+                                      "is_admin", user.admin ]
         saveUserInfo user ctx
         return! next ctx
     })
@@ -172,9 +173,10 @@ let clientVersionMiddleware : HttpMiddleware =
   (fun (next : HttpHandler) (ctx : HttpContext) ->
     task {
       let clientVersion = ctx.Request.Headers.Item "x-darklang-client-version"
-      Telemetry.addTags [ "request.header.client_version", clientVersion
-                          // CLEANUP this was a bad name. Kept in until old data falls out of Honeycomb
-                          "request.header.x-darklang-client-version", clientVersion ]
+      if System.Random().Next(10) = 0 then
+        Telemetry.addTags [ "request.header.client_version", clientVersion
+                            // CLEANUP this was a bad name. Kept in until old data falls out of Honeycomb
+                            "request.header.x-darklang-client-version", clientVersion ]
       return! next ctx
     })
 

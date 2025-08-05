@@ -137,15 +137,16 @@ let checkAndScheduleWorkForCron (cron : CronScheduleData) : Task<bool> =
           delayMs
           check.interval
         |> Option.map (fun delayRatio -> ("delay_ratio", delayRatio :> obj))
-      let attrs =
-        [ ("canvas_name", cron.canvasName :> obj)
-          ("tlid", cron.tlid)
-          ("handler_name", cron.cronName)
-          // method here to use the spec-handler name for
-          // consistency with http/worker logs
-          ("method", string cron.interval) ]
-        @ ([ delayLog; intervalLog; delayRatioLog ] |> List.filterMap (fun a -> a))
-      Telemetry.addTags attrs
+      if System.Random().Next(5) = 0 then
+        let attrs =
+          [ ("canvas_name", cron.canvasName :> obj)
+            ("tlid", cron.tlid)
+            ("handler_name", cron.cronName)
+            // method here to use the spec-handler name for
+            // consistency with http/worker logs
+            ("method", string cron.interval) ]
+          @ ([ delayLog; intervalLog; delayRatioLog ] |> List.filterMap (fun a -> a))
+        Telemetry.addTags attrs
       return true
     | None -> return false
   }
