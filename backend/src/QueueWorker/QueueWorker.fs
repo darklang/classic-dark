@@ -42,17 +42,18 @@ type ShouldRetry =
 /// event on success, and just the notification and failure reason on failure. Should
 /// not throw on error.
 let processNotification
-  (notification : EQ.Notification)
+  (notif : EQ.Notification)
   : Task<Result<EQ.T * EQ.Notification, string * EQ.Notification>> =
   task {
     use _span = Telemetry.createRoot "process"
-    Telemetry.addTags [ "event.time_in_queue_ms",
-                        notification.timeInQueue.TotalMilliseconds
-                        "event.id", notification.data.id
-                        "event.canvas_id", notification.data.canvasID
-                        "event.delivery_attempt", notification.deliveryAttempt
-                        "event.pubsub.ack_id", notification.pubSubAckID
-                        "event.pubsub.message_id", notification.pubSubMessageID ]
+    if System.Random().Next(5) = 0 then
+      Telemetry.addTags [ "event.time_in_queue_ms",
+                          notif.timeInQueue.TotalMilliseconds
+                          "event.id", notif.data.id
+                          "event.canvas_id", notif.data.canvasID
+                          "event.delivery_attempt", notif.deliveryAttempt
+                          "event.pubsub.ack_id", notif.pubSubAckID
+                          "event.pubsub.message_id", notif.pubSubMessageID ]
     let resultType (dv : RT.Dval) : string =
       match dv with
       | RT.DOption None -> "Option(None)"
@@ -71,15 +72,15 @@ let processNotification
                             "queue.success", false
                             "queue.retrying", retry <> NoRetry ]
         match retry with
-        | Retry delay -> return! EQ.requeueEvent notification delay
-        | NoRetry -> return! EQ.acknowledgeEvent notification
-        return Error(reason, notification) // no events executed
+        | Retry delay -> return! EQ.requeueEvent notif delay
+        | NoRetry -> return! EQ.acknowledgeEvent notif
+        return Error(reason, notif) // no events executed
       }
 
     // -------
     // EventLoad
     // -------
-    match! EQ.loadEvent notification.data.canvasID notification.data.id with
+    match! EQ.loadEvent notif.data.canvasID notif.data.id with
     | None -> return! stop "EventMissing" NoRetry
     | Some event -> // EventPresent
       Telemetry.addTags [ "event.handler.name", event.name
@@ -114,7 +115,7 @@ let processNotification
         // -------
         // RuleCheck
         // -------
-        match! EQ.getRule notification.data.canvasID event with
+        match! EQ.getRule notif.data.canvasID event with
         | Some rule ->
           // Drop the notification - we'll requeue it if someone unpauses
           Telemetry.addTags [ "queue.rule.type", rule.ruleType
@@ -130,7 +131,7 @@ let processNotification
           // because the retries might happen for a reason that isn't strictly
           // retries, such as lockedAt.
           // -------
-          if notification.deliveryAttempt >= 5 then
+          if notif.deliveryAttempt >= 5 then
             // DeliveryTooManyRetries
             do! EQ.deleteEvent event
             return! stop "DeliveryTooMany" NoRetry
@@ -139,7 +140,7 @@ let processNotification
             // -------
             // LockClaim
             // -------
-            match! EQ.claimLock event notification with
+            match! EQ.claimLock event notif with
             | Error msg ->
               // Someone else just claimed the lock!
               let retryTime = NodaTime.Duration.FromSeconds 300.0
@@ -152,7 +153,7 @@ let processNotification
               let! canvas =
                 Exception.taskCatch (fun () ->
                   task {
-                    let! meta = Canvas.getMetaFromID notification.data.canvasID
+                    let! meta = Canvas.getMetaFromID notif.data.canvasID
                     return!
                       Canvas.loadForEventV2
                         meta
@@ -214,7 +215,7 @@ let processNotification
 
                     // If we acknowledge the event here, and the machine goes down,
                     // PubSub will retry this once the ack deadline runs out
-                    do! EQ.extendDeadline notification
+                    do! EQ.extendDeadline notif
 
                     // CLEANUP Set a time limit of 3m
                     try
@@ -233,23 +234,24 @@ let processNotification
                             event.value
                           ))
 
-                      Telemetry.addTags [ "result_type", resultType result
-                                          "queue.success", true
-                                          "executed_tlids",
-                                          HashSet.toList traceResults.tlids
-                                          "queue.completion_reason", "completed" ]
+                      if System.Random().Next(10) = 0 then
+                        Telemetry.addTags [ "result_type", resultType result
+                                            "queue.success", true
+                                            "executed_tlids",
+                                            HashSet.toList traceResults.tlids
+                                            "queue.completion_reason", "completed" ]
                       // ExecutesToCompletion
 
                       // -------
                       // Delete
                       // -------
                       do! EQ.deleteEvent event
-                      do! EQ.acknowledgeEvent notification
+                      do! EQ.acknowledgeEvent notif
 
                       // -------
                       // End
                       // -------
-                      return Ok(event, notification)
+                      return Ok(event, notif)
                     with
                     | _ ->
                       // This automatically increments the deliveryAttempt, so it might
@@ -261,7 +263,7 @@ let processNotification
 /// Run in the background, using the semaphore to track completion
 let runInBackground
   (semaphore : System.Threading.SemaphoreSlim)
-  (notification : EQ.Notification)
+  (notif : EQ.Notification)
   : unit =
   // Ensure we get a lock before the background task starts. We should always get a
   // lock here, but if something goes awry it's better that we wait rather than fetch
@@ -269,7 +271,7 @@ let runInBackground
   semaphore.Wait()
   backgroundTask {
     try
-      let! (_ : Result<_, _>) = processNotification notification
+      let! (_ : Result<_, _>) = processNotification notif
       return ()
     finally
       semaphore.Release() |> ignore<int>

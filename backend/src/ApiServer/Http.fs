@@ -91,7 +91,6 @@ type HttpContextExtensions() =
     ) : Task<option<HttpContext>> =
     task {
       use t = startTimer "serialize-json" ctx
-      addTag "json_flavor" "vanilla"
       ctx.Response.ContentType <- "application/json; charset=utf-8"
       // Use a client-specific ApiServer
       let serialized = Json.Vanilla.serialize value
