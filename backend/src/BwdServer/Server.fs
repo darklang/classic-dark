@@ -615,7 +615,7 @@ let configureServices (services : IServiceCollection) : unit =
   services
   |> Kubernetes.configureServices [ Canvas.healthCheck ]
   |> Rollbar.AspNet.addRollbarToServices
-  |> Telemetry.AspNet.addTelemetryToServices "BwdServer" Telemetry.TraceDBQueries
+  |> Telemetry.AspNet.addTelemetryToServices "BwdServer" Telemetry.DontTraceDBQueries
   |> ignore<IServiceCollection>
 
 

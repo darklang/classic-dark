@@ -199,7 +199,7 @@ let configureApp (packages : Packages) (appBuilder : WebApplication) =
 let configureServices (services : IServiceCollection) : unit =
   services
   |> Rollbar.AspNet.addRollbarToServices
-  |> Telemetry.AspNet.addTelemetryToServices "ApiServer" Telemetry.TraceDBQueries
+  |> Telemetry.AspNet.addTelemetryToServices "ApiServer" Telemetry.DontTraceDBQueries
   |> Kubernetes.configureServices [ LibBackend.Canvas.healthCheck ]
   |> fun s -> s.AddServerTiming()
   |> fun s -> s.AddHsts(LibService.HSTS.setConfig)
