@@ -8,7 +8,7 @@ metadata:
 
 spec:
   revisionHistoryLimit: 10
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -70,10 +70,10 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "4000Mi"
-              cpu: "1.5"
+              memory: "1200Mi"
+              cpu: "100m"
             limits:
-              memory: "8000Mi"
+              memory: "2500Mi"
 
           # ---------------------
           # Lifecycles probes

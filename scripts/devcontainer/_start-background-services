@@ -11,10 +11,32 @@ for name in "${@}"; do
     sudo chown -R postgres:postgres /var/log/postgresql
     sudo chown -R postgres:postgres /var/lib/postgresql
 
-    # for some reason, uncommenting the equivalent line in the Dockerfile doesn't do the
-    # job. don't have time right now to figure out why.
+    # If upgrading from PG 13 to 16, or if the data dir is missing/corrupt,
+    # clean out and create a fresh PG 16 cluster.
+    if [ ! -f /var/lib/postgresql/16/main/PG_VERSION ]; then
+      echo "No valid PG 16 data directory found, creating fresh cluster"
+      sudo rm -rf /etc/postgresql/13 /var/lib/postgresql/13
+      sudo rm -rf /etc/postgresql/16 /var/lib/postgresql/16
+      # setsid runs initdb in a new session so SIGHUP from the devcontainer
+      # startup process group doesn't kill the temporary postgres subprocess
+      sudo setsid pg_createcluster 16 main -- --nosync
+
+      # Recreate the dark user and databases (normally done in Dockerfile,
+      # but lost when we recreate the cluster from a stale volume)
+      sudo pg_ctlcluster 16 main start
+      sudo -u postgres psql --command "CREATE USER dark WITH SUPERUSER PASSWORD 'darklang';"
+      sudo -u postgres createdb -O dark devdb
+      sudo -u postgres createdb -O dark testdb
+      sudo pg_ctlcluster 16 main stop
+    fi
+
+    # Ensure remote connections and listen address are configured
+    # (Dockerfile sets these at build time, but cluster recreation loses them)
+    if ! grep -q "host all  all    0.0.0.0/0" /etc/postgresql/16/main/pg_hba.conf 2>/dev/null; then
+      echo "host all  all    0.0.0.0/0  md5" | sudo tee -a /etc/postgresql/16/main/pg_hba.conf
+    fi
     LA="listen_addresses = '*'"
-    echo "$LA" | sudo tee -a /etc/postgresql/13/main/postgresql.conf
+    echo "$LA" | sudo tee -a /etc/postgresql/16/main/postgresql.conf
 
     # Fix weird permission problem, see from https://github.com/puntonim/docker-postgresql93/issues/2
     sudo chmod 766 /etc/ssl/private

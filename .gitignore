@@ -49,3 +49,5 @@ services/tunnel2-deployment/tunnel2-deployment.yaml
 gzipped_assets
 
 deploy-lock-manual-deploy
+cost-agent-key.json
+gcp-cost-savings/

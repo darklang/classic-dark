@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/change-cause: "{ARG:CHANGE_CAUSE}"
 spec:
   revisionHistoryLimit: 10
-  replicas: 2
+  replicas: 1
 
   selector:
     matchLabels:
@@ -75,8 +75,8 @@ spec:
           #  https://medium.com/google-cloud/quality-of-service-class-qos-in-kubernetes-bb76a89eb2c6
           resources:
             requests:
-              memory: "100Mi"
-              cpu: "200m"
+              memory: "30Mi"
+              cpu: "50m"
             limits:
               memory: "200Mi"
 

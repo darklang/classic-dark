@@ -37,9 +37,9 @@ metadata:
     app.kubernetes.io/part-of: custom-domains
 spec:
   revisionHistoryLimit: 10
-  # All darkcustomdomain traffic comes through this deployment, so we may need
-  # to increase this to support the traffic later.
-  replicas: 2
+  # All darkcustomdomain traffic comes through this deployment. Reduced to 1
+  # for maintenance mode. Increase if traffic warrants it.
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: darkcustomdomain-nginx-ingress-controller
@@ -80,10 +80,10 @@ spec:
               hostPort: 443
           resources:
             requests:
-              memory: "200Mi"
-              cpu: "100m"
+              memory: "300Mi"
+              cpu: "20m"
             limits:
-              memory: "500Mi"
+              memory: "600Mi"
           env:
             - name: POD_NAME
               valueFrom:

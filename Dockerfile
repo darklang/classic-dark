@@ -58,8 +58,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
       && apt clean \
       && rm -rf /var/lib/apt/lists/*
 
-# Latest NPM (taken from  https://deb.nodesource.com/setup_8.x )
-RUN curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
+# Note: Node.js 14 is installed directly from nodejs.org binaries below (not via apt)
+# because NodeSource deprecated the Node 14 repository after EOL (April 2023)
 RUN curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN curl -sSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -71,8 +71,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg ma
 
 RUN echo "deb https://nginx.org/packages/ubuntu/ jammy nginx" > /etc/apt/sources.list.d/nginx.list
 
-RUN echo "deb https://deb.nodesource.com/node_14.x jammy main" > /etc/apt/sources.list.d/nodesource.list
-RUN echo "deb-src https://deb.nodesource.com/node_14.x jammy main" >> /etc/apt/sources.list.d/nodesource.list
+# NodeSource repo removed - Node 14 installed from official binaries below
 
 RUN echo "deb http://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list
 RUN echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
@@ -106,15 +105,15 @@ RUN DEBIAN_FRONTEND=noninteractive \
       wget \
       sudo \
       locales \
-      postgresql-13 \
-      postgresql-client-13 \
-      postgresql-contrib-13 \
+      postgresql-16 \
+      postgresql-client-16 \
+      postgresql-contrib-16 \
       git-restore-mtime \
-      nodejs \
       libgbm1 \
-      google-cloud-sdk \
-      google-cloud-sdk-pubsub-emulator \
-      google-cloud-sdk-gke-gcloud-auth-plugin \
+      openjdk-11-jre-headless \
+      google-cloud-cli \
+      google-cloud-cli-pubsub-emulator \
+      google-cloud-cli-gke-gcloud-auth-plugin \
       terraform \
       jq \
       vim \
@@ -179,6 +178,31 @@ ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
 ############################
+# Node.js 14 (installed from official binaries since NodeSource deprecated Node 14)
+############################
+RUN <<EOF
+set -e
+NODE_VERSION=14.21.3
+case ${TARGETARCH} in
+  arm64) ARCH=arm64 ;;
+  amd64) ARCH=x64 ;;
+  *) exit 1;;
+esac
+curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz
+sudo mkdir -p /usr/local/lib/nodejs
+sudo tar -xJf node.tar.xz -C /usr/local/lib/nodejs
+# Stable path so PATH below doesn't depend on version/arch. npm's global prefix
+# is this directory, so `npm install -g` binaries land in current/bin.
+sudo ln -sfn /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${ARCH} /usr/local/lib/nodejs/current
+sudo ln -sf /usr/local/lib/nodejs/current/bin/node /usr/bin/node
+sudo ln -sf /usr/local/lib/nodejs/current/bin/npm /usr/bin/npm
+sudo ln -sf /usr/local/lib/nodejs/current/bin/npx /usr/bin/npx
+rm node.tar.xz
+node --version
+EOF
+ENV PATH="/usr/local/lib/nodejs/current/bin:${PATH}"
+
+############################
 # Frontend
 ############################
 RUN sudo npm install -g prettier@2.7.1
@@ -187,15 +211,17 @@ RUN sudo npm install -g prettier@2.7.1
 # Postgres
 ############################
 USER postgres
-RUN /etc/init.d/postgresql start && \
+RUN pg_dropcluster 16 main --stop 2>/dev/null || true && \
+    pg_createcluster 16 main -- --nosync && \
+    /etc/init.d/postgresql start && \
     psql --command "CREATE USER dark WITH SUPERUSER PASSWORD 'darklang';" && \
     createdb -O dark devdb && \
     createdb -O dark testdb
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
-RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/13/main/pg_hba.conf
-RUN echo "listen_addresses='*'" >> /etc/postgresql/13/main/postgresql.conf
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/16/main/pg_hba.conf
+RUN echo "listen_addresses='*'" >> /etc/postgresql/16/main/postgresql.conf
 
 USER dark
 # Add VOLUMEs to allow backup of config, logs and databases

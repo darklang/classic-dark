@@ -32,12 +32,11 @@ spec:
           # this pod is a 'Burstable' pod, ref:
           #  https://medium.com/google-cloud/quality-of-service-class-qos-in-kubernetes-bb76a89eb2c6
           resources:
-            # Observed in practice using 670m and 74Mi when going full-tilt
             requests:
-              memory: "180Mi"
-              cpu: "700m"
+              memory: "300Mi"
+              cpu: "100m"
             limits:
-              memory: "400Mi"
+              memory: "600Mi"
               cpu: "1100m"
           # lifecycle:
           #   preStop:
@@ -177,10 +176,10 @@ spec:
           # ---------------------
           resources:
             requests:
-              memory: "80Mi"
-              cpu: "500m"
+              memory: "50Mi"
+              cpu: "20m"
             limits:
-              memory: "500Mi"
+              memory: "200Mi"
               cpu: "800m"
 
           # ---------------------
