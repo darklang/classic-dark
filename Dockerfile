@@ -111,9 +111,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
       git-restore-mtime \
       libgbm1 \
       openjdk-11-jre-headless \
-      google-cloud-sdk \
-      google-cloud-sdk-pubsub-emulator \
-      google-cloud-sdk-gke-gcloud-auth-plugin \
+      google-cloud-cli \
+      google-cloud-cli-pubsub-emulator \
+      google-cloud-cli-gke-gcloud-auth-plugin \
       terraform \
       jq \
       vim \
