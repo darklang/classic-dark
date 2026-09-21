@@ -191,12 +191,16 @@ esac
 curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz
 sudo mkdir -p /usr/local/lib/nodejs
 sudo tar -xJf node.tar.xz -C /usr/local/lib/nodejs
-sudo ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${ARCH}/bin/node /usr/bin/node
-sudo ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${ARCH}/bin/npm /usr/bin/npm
-sudo ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${ARCH}/bin/npx /usr/bin/npx
+# Stable path so PATH below doesn't depend on version/arch. npm's global prefix
+# is this directory, so `npm install -g` binaries land in current/bin.
+sudo ln -sfn /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${ARCH} /usr/local/lib/nodejs/current
+sudo ln -sf /usr/local/lib/nodejs/current/bin/node /usr/bin/node
+sudo ln -sf /usr/local/lib/nodejs/current/bin/npm /usr/bin/npm
+sudo ln -sf /usr/local/lib/nodejs/current/bin/npx /usr/bin/npx
 rm node.tar.xz
 node --version
 EOF
+ENV PATH="/usr/local/lib/nodejs/current/bin:${PATH}"
 
 ############################
 # Frontend
