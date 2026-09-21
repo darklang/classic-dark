@@ -50,3 +50,4 @@ gzipped_assets
 
 deploy-lock-manual-deploy
 cost-agent-key.json
+gcp-cost-savings/
