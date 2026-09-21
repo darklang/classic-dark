@@ -1,6 +1,7 @@
 # honeycomb-agent is deployed via helm. I don't know a great deal about it, but it
 # seems we can update the deployment or the config-file, with
 #
+# helm repo add honeycomb https://honeycombio.github.io/helm-charts
 # helm upgrade --install honeycomb honeycomb/honeycomb --values services/honeycomb-agent/config.yaml
 k8s:
   namespace: default
