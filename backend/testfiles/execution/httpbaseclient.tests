@@ -33,17 +33,17 @@ HttpBaseClient.request "get" "http://thenonexistingurlforsure.com" [] Bytes.empt
 HttpBaseClient.request "get" "https://self-signed.badssl.com" [] Bytes.empty = Error "The SSL connection could not be established, see inner exception. The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot"
 
 [test.basic request works including headers]
+// Only compare stable headers (sorted): httpbin.org changes the rest over time.
 (let response = HttpBaseClient.request_ster "get" "https://httpbin.org/status/200" [] Bytes.empty
- let respHeaders = response.headers |> List.filter(fun h -> Tuple2.first h <> "date")
+ let respHeaders = response.headers |> List.filter(fun h -> List.member_v0 ["access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] (Tuple2.first h)) |> List.sortBy_v0 (fun h -> Tuple2.first h)
  Dict.set_v0 response "headers" respHeaders) =
    { statusCode = 200
      headers =
       [
-        ("server", "gunicorn/19.9.0")
-        ("access-control-allow-origin", "*")
         ("access-control-allow-credentials", "true")
-        ("content-type", "text/html; charset=utf-8")
+        ("access-control-allow-origin", "*")
         ("content-length", "0")
+        ("content-type", "text/html; charset=utf-8")
       ]
      body = Bytes.empty}
 

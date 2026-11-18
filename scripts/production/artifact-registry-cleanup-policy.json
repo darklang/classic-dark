@@ -1,0 +1,12 @@
+[
+  {
+    "name": "keep-10-newest-per-image",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 10 }
+  },
+  {
+    "name": "delete-everything-else",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "ANY" }
+  }
+]

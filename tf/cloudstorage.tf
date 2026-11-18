@@ -2,14 +2,8 @@
 # Used by container registry
 ##########################
 
-resource "google_storage_bucket" "artifacts_balmy_ground_195100_appspot_com" {
-  force_destroy            = false
-  location                 = "US"
-  name                     = "artifacts.balmy-ground-195100.appspot.com"
-  project                  = local.project_name
-  public_access_prevention = "inherited"
-  storage_class            = "STANDARD"
-}
+# artifacts.balmy-ground-195100.appspot.com (the pre-2025 Container Registry
+# bucket) was deleted on 2026-11-16: gcr.io is served by Artifact Registry.
 resource "google_storage_bucket" "us_artifacts_balmy_ground_195100_appspot_com" {
   force_destroy            = false
   location                 = "US"

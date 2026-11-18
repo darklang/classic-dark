@@ -13,7 +13,7 @@ Location: https://httpbin.org/status/200
 
 [test]
 (let response = HttpClient.get_v4_ster "http://URL" {} {}
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/1.1 303 See Other"; "Date"; "Location"; "Server"; "Transfer-Encoding"; "HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
     { body = ""
       code = 200
@@ -27,7 +27,6 @@ Location: https://httpbin.org/status/200
           ``HTTP/2 200`` = ""
           ``HTTP/1.1 303 See Other`` = ""
           Location = "https://httpbin.org/status/200"
-          server = "gunicorn/19.9.0"
           Server = "Kestrel"
           ``Transfer-Encoding`` = "chunked"
         }

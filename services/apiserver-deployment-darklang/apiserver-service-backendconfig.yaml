@@ -24,6 +24,7 @@ spec:
     # Note that only a change is status is logged.
     enable: true
 
-  # Cloud armor
+  # Cloud armor: none (removed 2026-11-18). An empty name detaches any policy;
+  # removing the field would leave GCP untouched.
   securityPolicy:
-    name: apiserver-service-security-policy
+    name: ""

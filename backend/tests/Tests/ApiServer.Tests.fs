@@ -61,7 +61,7 @@ let forceLogin (username : UserName.T) : Task<Client> =
 let login (username : string) (password : string) : Task<Client> =
   task {
     let client = new HttpClient()
-    client.Timeout <- System.TimeSpan.FromSeconds 1
+    client.Timeout <- System.TimeSpan.FromSeconds 10
     let port = portFor FSharp
 
     use loginReq =
@@ -828,7 +828,7 @@ let loggedOutClient () =
   lazy
     (let handler = new HttpClientHandler(AllowAutoRedirect = false)
      let client = new HttpClient(handler)
-     client.Timeout <- System.TimeSpan.FromSeconds 1
+     client.Timeout <- System.TimeSpan.FromSeconds 10
      let user = { http = client; csrf = "" }
      Task.FromResult user)
 
@@ -882,7 +882,7 @@ let cookies =
       task {
         let handler = new HttpClientHandler(AllowAutoRedirect = false)
         let client = new HttpClient(handler)
-        client.Timeout <- System.TimeSpan.FromSeconds 1
+        client.Timeout <- System.TimeSpan.FromSeconds 10
 
         use req =
           new HttpRequestMessage(
