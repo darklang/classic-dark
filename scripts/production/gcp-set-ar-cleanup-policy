@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+. ./scripts/devcontainer/_assert-in-container "$0" "$@"
+
+set -euo pipefail
+
+# Applies artifact-registry-cleanup-policy.json to the `gcr.io` Artifact Registry
+# repo (which serves gcr.io/balmy-ground-195100/*): keep the 10 newest versions of
+# each image, delete the rest. Keep rules win over delete rules. Google evaluates
+# the policies about once a day.
+#
+#   gcp-set-ar-cleanup-policy --dry-run      only log what would be deleted
+#   gcp-set-ar-cleanup-policy --no-dry-run   actually delete
+#
+# Dry-run results land in Cloud Audit Logs.
+
+MODE="${1:-}"
+if [[ "$MODE" != "--dry-run" && "$MODE" != "--no-dry-run" ]]; then
+  echo "usage: $0 --dry-run | --no-dry-run" >&2
+  exit 1
+fi
+
+gcloud artifacts repositories set-cleanup-policies gcr.io \
+  --project=balmy-ground-195100 \
+  --location=us \
+  --policy=scripts/production/artifact-registry-cleanup-policy.json \
+  "$MODE"

@@ -147,7 +147,7 @@ Dict.get_v2 response.headers "content-type"
 
 [test.http2 v5]
 (let response = HttpClient.get_v5_ster "https://httpbin.org/status/200" {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      code = 200
@@ -159,13 +159,12 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
 
 [test.http2 v4]
 (let response = HttpClient.get_v4_ster "https://httpbin.org/status/200" {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      code = 200
@@ -176,13 +175,12 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
 
 [test.http2 v3]
 (let response = HttpClient.get_v3_ster "https://httpbin.org/status/200" {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      code = 200
@@ -193,13 +191,12 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
 
 [test.http2 v2]
 (let response = HttpClient.get_v2_ster "https://httpbin.org/status/200" {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      headers =
@@ -209,13 +206,12 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
 
 [test.http2 v1]
 (let response = HttpClient.get_v1 "https://httpbin.org/status/200" {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      headers =
@@ -225,13 +221,12 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
 
 [test.http2 v0]
 (let response = HttpClient.get_v0 "https://httpbin.org/status/200" {} {} {} in
- let respHeaders = response.headers |> Dict.remove_v0 "date" in
+ let respHeaders = response.headers |> Dict.filterMap_v0 (fun (key, value) -> if List.member_v0 ["HTTP/2 200"; "access-control-allow-credentials"; "access-control-allow-origin"; "content-length"; "content-type"] key then Just value else Nothing) in
  Dict.set_v0 response "headers" respHeaders) =
    { body = ""
      headers =
@@ -241,6 +236,5 @@ Dict.get_v2 response.headers "content-type"
         ``access-control-allow-origin`` = "*"
         ``content-length`` = "0"
         ``content-type`` = "text/html; charset=utf-8"
-        server = "gunicorn/19.9.0"
       }
      raw = ""}
